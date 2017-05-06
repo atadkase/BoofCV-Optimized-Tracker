@@ -1,6 +1,2 @@
-###     BoofCV Android Benchmark   ###
-This branch houses the Android single-threaded benchmark
-written using the BoofCV library.
-
-
-Optimizing for android through native libraries.
+###     BoofCV Android Optimized Tracker  ###
+This branch holds the code for a native version of the BoofCV tracker. 
