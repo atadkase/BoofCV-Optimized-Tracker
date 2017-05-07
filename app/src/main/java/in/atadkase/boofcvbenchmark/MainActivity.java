@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.support.v4.app.ActivityCompat;
+import android.widget.TextView;
 
 import static android.content.ContentValues.TAG;
 
@@ -45,6 +46,10 @@ public class MainActivity extends Activity {
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
+
+    static {
+        System.loadLibrary("native-lib");
+    }
 
     public static void verifyStoragePermissions(Activity activity) {
         // Check if we have write permission
@@ -110,8 +115,10 @@ public class MainActivity extends Activity {
 
 
         super.onCreate(savedInstanceState);
-        //setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_main);
         verifyStoragePermissions(this);
+        TextView tv = (TextView) findViewById(R.id.sample_text);
+        tv.setText(stringFromJNI());
         FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(SrcPath);
         try
         {
@@ -276,5 +283,6 @@ public class MainActivity extends Activity {
         }
 
     }
+    public native String stringFromJNI();
 
 }
