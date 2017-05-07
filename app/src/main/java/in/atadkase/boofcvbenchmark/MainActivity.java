@@ -38,7 +38,7 @@ import boofcv.factory.tracker.FactoryTrackerObjectQuad;
 
 
 public class MainActivity extends Activity {
-    String SrcPath="/storage/emulated/0/imag/wildcat_robot.mp4";
+    String SrcPath="/storage/emulated/0/wildcat_robot.mp4";
     // Storage Permissions
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
     private static String[] PERMISSIONS_STORAGE = {
@@ -113,9 +113,15 @@ public class MainActivity extends Activity {
         //setContentView(R.layout.activity_main);
         verifyStoragePermissions(this);
         FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(SrcPath);
-        try
-        {
+        System.out.println("No problem here!!!");
+//        try
+//        {
+        try {
             grabber.start();
+        }catch (Exception exception)
+        {
+            Log.e("1", "Grabber Exception");
+        }
             long time_vid = grabber.getLengthInTime();
             Log.d("[TIME_VID]", "Time is "+ time_vid);
             Frame frame = new Frame();
@@ -148,6 +154,8 @@ public class MainActivity extends Activity {
 
 
             gray.reshape(imageWidth,imageHeight);
+            System.out.println("No problem here2!!!");
+
 
             for(long i = 0; i<grabber.getLengthInFrames(); i++)
             {
@@ -156,6 +164,7 @@ public class MainActivity extends Activity {
 
                 try {
                     frame = grabber.grabImage();
+
                     if(frame== null)
                         break;
                 }catch (Exception e)
@@ -182,7 +191,7 @@ public class MainActivity extends Activity {
                 else{
                     visible = tracker.process(gray, location);
                 }
-
+                //System.out.println("No problem here3!!!");
                 time3 = System.nanoTime();   //Processing done checkpoint
 
                 history.add( location.copy() );
@@ -195,13 +204,19 @@ public class MainActivity extends Activity {
                     totalFaults++;
 
             }
-            grabber.stop();
-
+            try {
+                grabber.stop();
+            }catch (Exception exception)
+        {
+            Log.e("1", "Grabber Exception");
+        }
             //**************************************************************************
             //**************************************************************************
             //**************************************************************************
             //**************************************************************************
             //Done with processing, now write the summary file!.
+
+        System.out.println("No problem here4!!");
 
             System.out.println("Finished the processing!!!!!******************************************************************************************************************");
 
@@ -215,7 +230,7 @@ public class MainActivity extends Activity {
             BufferedWriter out = null;
             try
             {
-                FileWriter fstream = new FileWriter("/storage/emulated/0/imag/summary.txt", true);   // append to file
+                FileWriter fstream = new FileWriter("/storage/emulated/0/summary.txt", true);   // append to file
                 out = new BufferedWriter(fstream);
                 String summaryString = timeStamp+ " Video: "+ numberFormat.format(fps_Video)
                         +" RGB_GRAY: "+numberFormat.format(fps_RGB_GRAY)+ " Tracker: "
@@ -244,7 +259,7 @@ public class MainActivity extends Activity {
             //Save history to a file!!!
             try
             {
-                FileWriter fstream = new FileWriter("/storage/emulated/0/imag/history."+timeStamp+".txt", true);   // append to file
+                FileWriter fstream = new FileWriter("/storage/emulated/0/history."+timeStamp+".txt", true);   // append to file
                 out = new BufferedWriter(fstream);
                 for( Quadrilateral_F64 history_loc : history ) {
                     out.write("a:"+history_loc.a.x+" "+history_loc.a.y+"\n"+
@@ -269,11 +284,11 @@ public class MainActivity extends Activity {
             }
 
             Log.d("[FRAMES]", "Frames = "+ counter);
-
-        }catch (Exception exception)
-        {
-            Log.e("1", "Grabber Exception");
-        }
+//
+//        }catch (Exception exception)
+//        {
+//            Log.e("1", "Grabber Exception");
+//        }
 
     }
 

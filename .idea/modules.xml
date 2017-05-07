@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/BoofCV-Optimized-Tracker.iml" filepath="$PROJECT_DIR$/BoofCV-Optimized-Tracker.iml" />
-      <module fileurl="file://$PROJECT_DIR$/BoofCVBenchmark.iml" filepath="$PROJECT_DIR$/BoofCVBenchmark.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
