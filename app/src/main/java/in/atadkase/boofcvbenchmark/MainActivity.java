@@ -39,7 +39,7 @@ import boofcv.factory.tracker.FactoryTrackerObjectQuad;
 
 
 public class MainActivity extends Activity {
-    String SrcPath="/storage/emulated/0/imag/wildcat_robot.mp4";
+    String SrcPath="/Internal storage/wildcat_robot.mp4";
     // Storage Permissions
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
     private static String[] PERMISSIONS_STORAGE = {
