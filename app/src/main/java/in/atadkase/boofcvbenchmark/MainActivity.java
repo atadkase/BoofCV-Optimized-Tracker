@@ -15,6 +15,9 @@ import static android.content.ContentValues.TAG;
 
 //Java imports
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.List;
 import java.text.SimpleDateFormat;
 import java.io.BufferedWriter;
@@ -49,6 +52,7 @@ public class MainActivity extends Activity {
 
     static {
         System.loadLibrary("native-lib");
+        System.loadLibrary("nativeOCL");
     }
 
     public static void verifyStoragePermissions(Activity activity) {
@@ -282,7 +286,52 @@ public class MainActivity extends Activity {
             Log.e("1", "Grabber Exception");
         }
 
+        initOpenCL(getOpenCLProgram());
+        Log.i("OpenCL","OpenCL Working! Congrats!");
+        shutdownOpenCL();
+        Log.i("AndroidBasic", "Exiting backgroundThread");
+
     }
     public native String stringFromJNI();
+
+    private String getOpenCLProgram ()
+    {
+        /* OpenCL program text is stored in a separate file in
+         * assets directory. Here you need to load it as a single
+         * string.
+         *
+         * In fact, the program may be directly built into
+         * native source code where OpenCL API is used,
+         * it is useful for short kernels (few lines) because it doesn't
+         * involve loading code and you don't need to pass it from Java to
+         * native side.
+         */
+
+        try
+        {
+            StringBuilder buffer = new StringBuilder();
+            InputStream stream = getAssets().open("VectorAdd.cl");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+            String s;
+
+            while((s = reader.readLine()) != null)
+            {
+                buffer.append(s);
+                buffer.append("\n");
+            }
+
+            reader.close();
+            return buffer.toString();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
+
+    }
+
+    private native void initOpenCL (String openCLProgramText);
+
+    private native void shutdownOpenCL ();
 
 }
