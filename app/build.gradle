@@ -66,7 +66,7 @@ dependencies {
     compile files('libs/javacpp.jar')
     compile files('libs/javacv.jar')
     compile files('libs/opencv.jar')
-    compile 'org.boofcv:core:0.26'
+    compile 'org.boofcv:core:0.27-SNAPSHOT'
     //testCompile group: 'junit', name: 'junit', version: '4.12'
     compile files('libs/opencv-android-arm.jar')
     compile files('libs/ffmpeg-android-arm.jar')
