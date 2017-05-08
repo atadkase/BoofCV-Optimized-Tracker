@@ -175,7 +175,7 @@ public class MainActivity extends Activity {
                 time1 = System.nanoTime();   //Frame Grabbed checkpoint
 
                 try {
-                    convert(frame, interleaved, true);   //convert frame to interleavedU8
+                    convert(frame, interleaved, false);   //convert frame to interleavedU8
                 }catch (Exception e)
                 {
                     Log.e("EXCEPTION","Convert exception" ,e);
