@@ -35,7 +35,7 @@ import boofcv.factory.tracker.FactoryTrackerObjectQuad;
 
 public class MainActivity extends Activity {
 
-    String SrcPath="/storage/emulated/0/imag/wildcat_robot.mp4";
+    String SrcPath="/storage/self/primary/wildcat_robot.mp4";
 
     // Storage Permissions
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
@@ -211,7 +211,7 @@ public class MainActivity extends Activity {
             BufferedWriter out = null;
             try
             {
-                FileWriter fstream = new FileWriter("/storage/emulated/0/imag/summary.txt", true);   // append to file
+                FileWriter fstream = new FileWriter("/storage/self/primary/summary.txt", true);   // append to file
                 out = new BufferedWriter(fstream);
                 String summaryString = timeStamp+ " Video: "+ numberFormat.format(fps_Video)
                         +" RGB_GRAY: "+numberFormat.format(fps_RGB_GRAY)+ " Tracker: "
@@ -240,7 +240,7 @@ public class MainActivity extends Activity {
             //Save history to a file!!!
             try
             {
-                FileWriter fstream = new FileWriter("/storage/emulated/0/imag/history."+timeStamp+".txt", true);   // append to file
+                FileWriter fstream = new FileWriter("/storage/self/primary/history."+timeStamp+".txt", true);   // append to file
                 out = new BufferedWriter(fstream);
                 for( Quadrilateral_F64 history_loc : history ) {
                     out.write("a:"+history_loc.a.x+" "+history_loc.a.y+"\n"+
