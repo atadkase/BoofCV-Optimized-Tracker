@@ -503,7 +503,7 @@ void initOpenCL
      * in an OpenCL program.
      */
 
-    openCLObjects.kernel = clCreateKernel(openCLObjects.program, "stepKernel", &err);
+    openCLObjects.kernel = clCreateKernel(openCLObjects.program, "VectorAdd", &err);
     SAMPLE_CHECK_ERRORS(err);
 
     /* -----------------------------------------------------------------------
