@@ -78,6 +78,6 @@ set_target_properties( # Specifies the target library.
                        PROPERTIES IMPORTED_LOCATION
 
                        # Provides the path to the library you want to import.
-                       /media/ashu/Work/BoofCV-Optimized-Tracker/app/src/main/jniLibs/libOpenCL.so )
+                      ${CMAKE_SOURCE_DIR}/src/main/jniLibs/libOpenCL.so  )
 
-target_link_libraries( nativeOCL OpenCL app-glue ${log-lib} )
+target_link_libraries( nativeOCL OpenCL ${log-lib} )
