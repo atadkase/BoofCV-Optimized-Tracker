@@ -15,6 +15,8 @@ import static android.content.ContentValues.TAG;
 
 //Java imports
 
+import in.atadkase.boofcvbenchmark.Multithread_test;
+
 import java.util.List;
 import java.text.SimpleDateFormat;
 import java.io.BufferedWriter;
@@ -44,6 +46,12 @@ import boofcv.abst.tracker.TrackerObjectQuad;
 import boofcv.factory.tracker.FactoryTrackerObjectQuad;
 import georegression.struct.shapes.Rectangle2D_F64;
 import georegression.struct.shapes.RectangleLength2D_F32;
+
+
+
+
+
+
 
 
 public class MainActivity extends Activity {
@@ -113,6 +121,8 @@ public class MainActivity extends Activity {
     }
 
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -148,7 +158,7 @@ public class MainActivity extends Activity {
             GrayU8 gray = new GrayU8(1,1);
             InterleavedU8 interleaved = new InterleavedU8(imageWidth, imageHeight, numBands);
             Quadrilateral_F64 location = new Quadrilateral_F64(211.0,162.0,326.0,153.0,335.0,258.0,215.0,249.0);
-            TrackerObjectQuad<GrayU8> tracker = FactoryTrackerObjectQuad.circulant(null, GrayU8.class);
+            //TrackerObjectQuad<GrayU8> tracker = FactoryTrackerObjectQuad.circulant(null, GrayU8.class);
             DecimalFormat numberFormat = new DecimalFormat("#.000000");
             List<Quadrilateral_F64> history = new ArrayList<>();
 
@@ -165,6 +175,16 @@ public class MainActivity extends Activity {
 
 
             gray.reshape(imageWidth,imageHeight);
+
+            //****************************************************************************
+            System.out.print("The main thread id is:");
+            System.out.println(android.os.Process.getThreadPriority(android.os.Process.myTid()));
+
+            Multithread_test multi = new Multithread_test();
+            new Thread(multi).start();
+
+
+            //*********************************************************************************
             System.out.println("No problem here2!!!");
 
 
@@ -172,6 +192,7 @@ public class MainActivity extends Activity {
             {
                 counter++;
                 time0sys = System.nanoTime();  //Start the first timer
+
 
                 try {
                     frame = grabber.grabImage();
@@ -345,6 +366,13 @@ public class MainActivity extends Activity {
             String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date());
             System.out.printf("Summary: video %6.1f RGB_GRAY %6.1f Tracker %6.1f  Faults %d\n",
                     fps_Video,fps_RGB_GRAY,fps_Tracker,totalFaults);
+            System.out.printf("Section1_fps is %6.1f\n",(totalFrames/(circ_tracker.getSection1_time()*1e-9)));
+            System.out.printf("Section2_fps is %6.1f\n",(totalFrames/(circ_tracker.getSection2_time()*1e-9)));
+            System.out.printf("Section3_fps is %6.1f\n",(totalFrames/(circ_tracker.getSection3_time()*1e-9)));
+            System.out.printf("Section4_fps is %6.1f\n",(totalFrames/(circ_tracker.getSection4_time()*1e-9)));
+            System.out.printf("Section5_fps is %6.1f\n",(totalFrames/(circ_tracker.getSection5_time()*1e-9)));
+            System.out.printf("Section6_fps is %6.1f\n",(totalFrames/(circ_tracker.getSection6_time()*1e-9)));
+
 
             BufferedWriter out = null;
             try
