@@ -32,6 +32,7 @@ import org.bytedeco.javacv.FrameGrabber;
 
 //BoofCV imports
 import boofcv.alg.tracker.circulant.CirculantTracker;
+import boofcv.alg.transform.fft.DiscreteFourierTransformOps;
 import boofcv.factory.tracker.FactoryTrackerObjectAlgs;
 
 import boofcv.core.image.ConvertImage;
@@ -160,7 +161,7 @@ public class MainActivity extends Activity {
             int totalFrames = 0;
             boolean visible = false;
             long counter = 0;
-            long time0,time1,time2,time3;
+            long time0sys,time1sys,time2,time3;
 
 
             gray.reshape(imageWidth,imageHeight);
@@ -170,7 +171,7 @@ public class MainActivity extends Activity {
             for(long i = 0; i<grabber.getLengthInFrames(); i++)
             {
                 counter++;
-                time0 = System.nanoTime();  //Start the first timer
+                time0sys = System.nanoTime();  //Start the first timer
 
                 try {
                     frame = grabber.grabImage();
@@ -182,7 +183,7 @@ public class MainActivity extends Activity {
                     Log.e("EXCEPTION","Grab image exception");
                 }
 
-                time1 = System.nanoTime();   //Frame Grabbed checkpoint
+                time1sys = System.nanoTime();   //Frame Grabbed checkpoint
 
                 try {
                     convert(frame, interleaved, false);   //convert frame to interleavedU8
@@ -214,14 +215,77 @@ public class MainActivity extends Activity {
                 else{
 
                     //****************************************START OF CODE IN UI************************************
-                    tracker.process(gray,location);
+                    //tracker.process(gray,location);
                     //********************************************************************************
 
-                    circ_tracker.performTracking(gray);
+                    //circ_tracker.performTracking(gray); //Got implemented in 2 pass below.
 
                     //*******************************************************************************
+                    double time0= System.nanoTime();
+                    circ_tracker.get_subwindow(gray,circ_tracker.templateNew);
+                    double time1= System.nanoTime();
+                    circ_tracker.section1_time += time1-time0;
+
+                    // calculate response of the classifier at all locations
+                    // matlab: k = dense_gauss_kernel(sigma, x, z);
+
+                    time0 = System.nanoTime();
+                    circ_tracker.dense_gauss_kernel(circ_tracker.sigma, circ_tracker.templateNew, circ_tracker.template,circ_tracker.k);
+                    time1 = System.nanoTime();
+                    circ_tracker.section2_time += time1-time0;
+
+                    time0 = System.nanoTime();
+                    circ_tracker.fft.forward(circ_tracker.k,circ_tracker.kf);
+                    time1 = System.nanoTime();
+                    circ_tracker.section3_time += time1-time0;
+
+                    time0 = System.nanoTime();
+                    // response = real(ifft2(alphaf .* fft2(k)));   %(Eq. 9)
+                    DiscreteFourierTransformOps.multiplyComplex(circ_tracker.alphaf, circ_tracker.kf, circ_tracker.tmpFourier0);
+                    time1 = System.nanoTime();
+                    circ_tracker.section4_time += time1-time0;
 
 
+                    time0 = System.nanoTime();
+                    circ_tracker.fft.inverse(circ_tracker.tmpFourier0, circ_tracker.response);
+                    time1 = System.nanoTime();
+                    circ_tracker.section5_time += time1-time0;
+
+                    time0 = System.nanoTime();
+                    // find the pixel with the largest response
+                    int N = circ_tracker.response.width*circ_tracker.response.height;
+                    int indexBest = -1;
+                    double valueBest = -1;
+                    for( int i_n = 0; i_n < N; i_n++ ) {
+                        double v = circ_tracker.response.data[i_n];
+                        if( v > valueBest ) {
+                            valueBest = v;
+                            indexBest = i_n;
+                        }
+                    }
+
+                    int peakX = indexBest % circ_tracker.response.width;
+                    int peakY = indexBest / circ_tracker.response.width;
+
+                    // sub-pixel peak estimation
+                    circ_tracker.subpixelPeak(peakX, peakY);
+
+                    // peak in region's coordinate system
+                    float deltaX = (peakX+circ_tracker.offX) - circ_tracker.templateNew.width/2;
+                    float deltaY = (peakY+circ_tracker.offY) - circ_tracker.templateNew.height/2;
+
+                    // convert peak location into image coordinate system
+                    circ_tracker.regionTrack.x0 = circ_tracker.regionTrack.x0 + deltaX*circ_tracker.stepX;
+                    circ_tracker.regionTrack.y0 = circ_tracker.regionTrack.y0 + deltaY*circ_tracker.stepY;
+                    time1 = System.nanoTime();
+                    circ_tracker.section6_time += time1-time0;
+                    circ_tracker.updateRegionOut();
+
+                    //*********************************************************************************
+                    if( circ_tracker.interp_factor != 0 )
+                        circ_tracker.performLearning(gray);
+
+                    //********************************************************************************
                         RectangleLength2D_F32 r = circ_tracker.getTargetLocation();
 
                         if( r.x0 >= gray.width || r.y0 >= gray.height )
@@ -250,8 +314,8 @@ public class MainActivity extends Activity {
                 time3 = System.nanoTime();   //Processing done checkpoint
 
                 history.add( location.copy() );
-                totalVideo += time1-time0;
-                totalRGB_GRAY += time2-time1;
+                totalVideo += time1sys-time0sys;
+                totalRGB_GRAY += time2-time1sys;
                 totalTracker += time3-time2;
 
                 totalFrames++;
