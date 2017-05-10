@@ -15,7 +15,9 @@ import static android.content.ContentValues.TAG;
 
 //Java imports
 
-import in.atadkase.boofcvbenchmark.Multithread_test;
+import boofcv.struct.image.GrayF64;
+import boofcv.struct.image.InterleavedF64;
+import in.atadkase.boofcvbenchmark.Multithreaded_pipeline;
 
 import java.util.List;
 import java.text.SimpleDateFormat;
@@ -158,7 +160,7 @@ public class MainActivity extends Activity {
             GrayU8 gray = new GrayU8(1,1);
             InterleavedU8 interleaved = new InterleavedU8(imageWidth, imageHeight, numBands);
             Quadrilateral_F64 location = new Quadrilateral_F64(211.0,162.0,326.0,153.0,335.0,258.0,215.0,249.0);
-            //TrackerObjectQuad<GrayU8> tracker = FactoryTrackerObjectQuad.circulant(null, GrayU8.class);
+            TrackerObjectQuad<GrayU8> tracker = FactoryTrackerObjectQuad.circulant(null, GrayU8.class);
             DecimalFormat numberFormat = new DecimalFormat("#.000000");
             List<Quadrilateral_F64> history = new ArrayList<>();
 
@@ -180,8 +182,8 @@ public class MainActivity extends Activity {
             System.out.print("The main thread id is:");
             System.out.println(android.os.Process.getThreadPriority(android.os.Process.myTid()));
 
-            Multithread_test multi = new Multithread_test();
-            new Thread(multi).start();
+            Multithreaded_pipeline multi = new Multithreaded_pipeline();
+            new Thread(multi.new pipe1()).start();
 
 
             //*********************************************************************************
@@ -252,6 +254,41 @@ public class MainActivity extends Activity {
 
                     time0 = System.nanoTime();
                     circ_tracker.dense_gauss_kernel(circ_tracker.sigma, circ_tracker.templateNew, circ_tracker.template,circ_tracker.k);
+                    //*****************************************************************************
+                    InterleavedF64 xf=circ_tracker.tmpFourier0,yf,xyf=circ_tracker.tmpFourier2;
+                    GrayF64 xy = tmpReal0;
+                    double yy;
+
+                    // find x in Fourier domain
+                    fft.forward(x, xf);
+                    double xx = imageDotProduct(x);
+
+                    if( x != y ) {
+                        // general case, x and y are different
+                        yf = tmpFourier1;
+                        fft.forward(y,yf);
+                        yy = imageDotProduct(y);
+                    } else {
+                        // auto-correlation of x, avoid repeating a few operations
+                        yf = xf;
+                        yy = xx;
+                    }
+
+                    //----   xy = invF[ F(x)*F(y) ]
+                    // cross-correlation term in Fourier domain
+                    elementMultConjB(xf,yf,xyf);
+                    // convert to spatial domain
+                    fft.inverse(xyf,xy);
+                    circshift(xy,tmpReal1);
+
+                    // calculate gaussian response for all positions
+                    gaussianKernel(xx, yy, tmpReal1, sigma, k);
+
+
+
+
+
+                    //*****************************************************************************
                     time1 = System.nanoTime();
                     circ_tracker.section2_time += time1-time0;
 
@@ -271,6 +308,7 @@ public class MainActivity extends Activity {
                     circ_tracker.fft.inverse(circ_tracker.tmpFourier0, circ_tracker.response);
                     time1 = System.nanoTime();
                     circ_tracker.section5_time += time1-time0;
+
 
                     time0 = System.nanoTime();
                     // find the pixel with the largest response
@@ -303,10 +341,17 @@ public class MainActivity extends Activity {
                     circ_tracker.updateRegionOut();
 
                     //*********************************************************************************
+
+
+                    time0 = System.nanoTime();
                     if( circ_tracker.interp_factor != 0 )
                         circ_tracker.performLearning(gray);
+                    time1 = System.nanoTime();
+                    circ_tracker.learning_time += time1-time0;
 
                     //********************************************************************************
+
+
                         RectangleLength2D_F32 r = circ_tracker.getTargetLocation();
 
                         if( r.x0 >= gray.width || r.y0 >= gray.height )
@@ -329,6 +374,8 @@ public class MainActivity extends Activity {
                             location.d.y = y1;
                             visible = true;
                         }
+
+
                 }
 
                 //System.out.println("No problem here3!!!");
@@ -372,7 +419,7 @@ public class MainActivity extends Activity {
             System.out.printf("Section4_fps is %6.1f\n",(totalFrames/(circ_tracker.getSection4_time()*1e-9)));
             System.out.printf("Section5_fps is %6.1f\n",(totalFrames/(circ_tracker.getSection5_time()*1e-9)));
             System.out.printf("Section6_fps is %6.1f\n",(totalFrames/(circ_tracker.getSection6_time()*1e-9)));
-
+            System.out.printf("Learning_fps is %6.1f\n",(totalFrames/(circ_tracker.learning_time*1e-9)));
 
             BufferedWriter out = null;
             try
