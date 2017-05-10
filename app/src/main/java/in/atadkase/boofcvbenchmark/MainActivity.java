@@ -33,12 +33,14 @@ import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber;
 
 //BoofCV imports
+import boofcv.abst.tracker.TrackerObjectQuadFloat;
 import boofcv.core.encoding.ConvertNV21;
 import boofcv.core.image.ConvertImage;
 import boofcv.struct.image.GrayI8;
 import boofcv.struct.image.InterleavedU8;
 import boofcv.struct.image.GrayU8;
 import boofcv.struct.image.Planar;
+import georegression.struct.shapes.Quadrilateral_F32;
 import georegression.struct.shapes.Quadrilateral_F64;
 import boofcv.abst.tracker.TrackerObjectQuad;
 import boofcv.factory.tracker.FactoryTrackerObjectQuad;
@@ -57,7 +59,10 @@ public class MainActivity extends Activity {
     static {
         System.loadLibrary("native-lib");
         System.loadLibrary("nativeOCL");
+        System.loadLibrary("NE10_test_demo");
     }
+
+    public native String NE10RunTest();
 
     public static void verifyStoragePermissions(Activity activity) {
         // Check if we have write permission
@@ -124,7 +129,19 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         verifyStoragePermissions(this);
         TextView tv = (TextView) findViewById(R.id.sample_text);
-        tv.setText(stringFromJNI());
+        //tv.setText(stringFromJNI());
+
+        tv.setText(NE10RunTest());
+
+
+
+
+
+
+
+
+
+
         FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(SrcPath);
         try {
             grabber.start();
@@ -143,10 +160,10 @@ public class MainActivity extends Activity {
 
             GrayU8 gray = new GrayU8(1, 1);
             InterleavedU8 interleaved = new InterleavedU8(imageWidth, imageHeight, numBands);
-            Quadrilateral_F64 location = new Quadrilateral_F64(211.0, 162.0, 326.0, 153.0, 335.0, 258.0, 215.0, 249.0);
-            TrackerObjectQuad<GrayU8> tracker = FactoryTrackerObjectQuad.circulant(null, GrayU8.class);
+            Quadrilateral_F32 location = new Quadrilateral_F32(211.0f, 162.0f, 326.0f, 153.0f, 335.0f, 258.0f, 215.0f, 249.0f);
+            TrackerObjectQuadFloat<GrayU8> tracker = FactoryTrackerObjectQuad.circulantFloat(null, GrayU8.class);
             DecimalFormat numberFormat = new DecimalFormat("#.000000");
-            List<Quadrilateral_F64> history = new ArrayList<>();
+            List<Quadrilateral_F32> history = new ArrayList<>();
 
             long totalVideo = 0;
             long totalRGB_GRAY = 0;
@@ -246,7 +263,7 @@ public class MainActivity extends Activity {
             try {
                 FileWriter fstream = new FileWriter("/storage/emulated/0/imag/history." + timeStamp + ".txt", true);   // append to file
                 out = new BufferedWriter(fstream);
-                for (Quadrilateral_F64 history_loc : history) {
+                for (Quadrilateral_F32 history_loc : history) {
                     out.write("a:" + history_loc.a.x + " " + history_loc.a.y + "\n" +
                             "b:" + history_loc.b.x + " " + history_loc.b.y + "\n" +
                             "c:" + history_loc.c.x + " " + history_loc.c.y + "\n" +
@@ -265,39 +282,39 @@ public class MainActivity extends Activity {
 
             Log.d("[FRAMES]", "Frames = " + counter);
 
-            tracker.update_section_times();
-            double section1_time = tracker.getSection1_time();
-            double section2_time = tracker.getSection2_time();
-            double section3_time = tracker.getSection3_time();
-            double section4_time = tracker.getSection4_time();
-            double section5_time = tracker.getSection5_time();
-            double section6_time = tracker.getSection6_time();
-
-            double section1_FPS = totalFrames/(section1_time*1e-9);
-            double section2_FPS = totalFrames/(section2_time*1e-9);
-            double section3_FPS = totalFrames/(section3_time*1e-9);
-            double section4_FPS = totalFrames/(section4_time*1e-9);
-            double section5_FPS = totalFrames/(section5_time*1e-9);
-            double section6_FPS = totalFrames/(section6_time*1e-9);
-
-
-            Log.i("[FPS]","Section 1 FPS="+totalFrames/(section1_time*1e-9));
-            Log.i("[FPS]","Section 2 FPS="+totalFrames/(section2_time*1e-9));
-            Log.i("[FPS]","Section 3 FPS="+totalFrames/(section3_time*1e-9));
-            Log.i("[FPS]","Section 4 FPS="+totalFrames/(section4_time*1e-9));
-            Log.i("[FPS]","Section 5 FPS="+totalFrames/(section5_time*1e-9));
-            Log.i("[FPS]","Section 6 FPS="+totalFrames/(section6_time*1e-9));
-
-
-
-            Log.i("[FPS-Time]","Section 1 Time="+1/section1_FPS);
-            Log.i("[FPS-Time]","Section 2 Time="+1/section2_FPS);
-            Log.i("[FPS-Time]","Section 3 Time="+1/section3_FPS);
-            Log.i("[FPS-Time]","Section 4 Time="+1/section4_FPS);
-            Log.i("[FPS-Time]","Section 5 Time="+1/section5_FPS);
-            Log.i("[FPS-Time]","Section 6 Time="+1/section6_FPS);
-
-            Log.i("[FPS-TIME]","Tracker Time="+1/fps_Tracker);
+//            tracker.update_section_times();
+//            double section1_time = tracker.getSection1_time();
+//            double section2_time = tracker.getSection2_time();
+//            double section3_time = tracker.getSection3_time();
+//            double section4_time = tracker.getSection4_time();
+//            double section5_time = tracker.getSection5_time();
+//            double section6_time = tracker.getSection6_time();
+//
+//            double section1_FPS = totalFrames/(section1_time*1e-9);
+//            double section2_FPS = totalFrames/(section2_time*1e-9);
+//            double section3_FPS = totalFrames/(section3_time*1e-9);
+//            double section4_FPS = totalFrames/(section4_time*1e-9);
+//            double section5_FPS = totalFrames/(section5_time*1e-9);
+//            double section6_FPS = totalFrames/(section6_time*1e-9);
+//
+//
+//            Log.i("[FPS]","Section 1 FPS="+totalFrames/(section1_time*1e-9));
+//            Log.i("[FPS]","Section 2 FPS="+totalFrames/(section2_time*1e-9));
+//            Log.i("[FPS]","Section 3 FPS="+totalFrames/(section3_time*1e-9));
+//            Log.i("[FPS]","Section 4 FPS="+totalFrames/(section4_time*1e-9));
+//            Log.i("[FPS]","Section 5 FPS="+totalFrames/(section5_time*1e-9));
+//            Log.i("[FPS]","Section 6 FPS="+totalFrames/(section6_time*1e-9));
+//
+//
+//
+//            Log.i("[FPS-Time]","Section 1 Time="+1/section1_FPS);
+//            Log.i("[FPS-Time]","Section 2 Time="+1/section2_FPS);
+//            Log.i("[FPS-Time]","Section 3 Time="+1/section3_FPS);
+//            Log.i("[FPS-Time]","Section 4 Time="+1/section4_FPS);
+//            Log.i("[FPS-Time]","Section 5 Time="+1/section5_FPS);
+//            Log.i("[FPS-Time]","Section 6 Time="+1/section6_FPS);
+//
+//            Log.i("[FPS-TIME]","Tracker Time="+1/fps_Tracker);
 
         } catch (Exception exception) {
             Log.e("1", "Grabber Exception");
@@ -350,25 +367,25 @@ public class MainActivity extends Activity {
 
     private native void shutdownOpenCL();
 
-    public void benchmarkNV21() {
-        byte data[] = new byte[1024*1024*3];
-        //GrayU8 gray = new GrayU8(1024,1024);
-        Planar<GrayU8> gray= new Planar<GrayU8>(GrayU8.class,1024,1024,3);
-        for(int i = 0; i<1024*1024*3; i++)
-        {
-            data[i] = (byte)(i%255);
-        }
-        double totalTime =0;
-        double time0 = System.nanoTime();  //Start the first timer
-        for (long i = 0; i < 1000; i++) {
-
-            ConvertNV21.nv21ToMsRgb_U8(data, 1024, 1024,gray);
-        }
-        double time1 = System.nanoTime();  //Start the first timer
-        totalTime = time1 - time0;
-        double fps_Gray = 1000 / (totalTime * 1e-9);
-        System.out.println("FPS of NV21->Gray "+ fps_Gray);
-
-    }
+//    public void benchmarkNV21() {
+//        byte data[] = new byte[1024*1024*3];
+//        //GrayU8 gray = new GrayU8(1024,1024);
+//        Planar<GrayU8> gray= new Planar<GrayU8>(GrayU8.class,1024,1024,3);
+//        for(int i = 0; i<1024*1024*3; i++)
+//        {
+//            data[i] = (byte)(i%255);
+//        }
+//        double totalTime =0;
+//        double time0 = System.nanoTime();  //Start the first timer
+//        for (long i = 0; i < 1000; i++) {
+//
+//            ConvertNV21.nv21ToMsRgb_U8(data, 1024, 1024,gray);
+//        }
+//        double time1 = System.nanoTime();  //Start the first timer
+//        totalTime = time1 - time0;
+//        double fps_Gray = 1000 / (totalTime * 1e-9);
+//        System.out.println("FPS of NV21->Gray "+ fps_Gray);
+//
+//    }
 
 }
