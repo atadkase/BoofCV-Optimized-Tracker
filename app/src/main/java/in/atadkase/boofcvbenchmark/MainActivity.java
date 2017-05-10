@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.support.v4.app.ActivityCompat;
 
+
 import static android.content.ContentValues.TAG;
 
 
@@ -23,18 +24,25 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 import java.nio.ByteBuffer;
+
+
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber;
 
 //BoofCV imports
+import boofcv.alg.tracker.circulant.CirculantTracker;
+import boofcv.factory.tracker.FactoryTrackerObjectAlgs;
+
 import boofcv.core.image.ConvertImage;
 import boofcv.struct.image.InterleavedU8;
 import boofcv.struct.image.GrayU8;
+import georegression.geometry.UtilPolygons2D_F64;
 import georegression.struct.shapes.Quadrilateral_F64;
 import boofcv.abst.tracker.TrackerObjectQuad;
 import boofcv.factory.tracker.FactoryTrackerObjectQuad;
-
+import georegression.struct.shapes.Rectangle2D_F64;
+import georegression.struct.shapes.RectangleLength2D_F32;
 
 
 public class MainActivity extends Activity {
@@ -143,6 +151,8 @@ public class MainActivity extends Activity {
             DecimalFormat numberFormat = new DecimalFormat("#.000000");
             List<Quadrilateral_F64> history = new ArrayList<>();
 
+            CirculantTracker<GrayU8> circ_tracker = FactoryTrackerObjectAlgs.circulant(null,GrayU8.class);
+
             long totalVideo=0;
             long totalRGB_GRAY = 0;
             long totalTracker = 0;
@@ -175,7 +185,7 @@ public class MainActivity extends Activity {
                 time1 = System.nanoTime();   //Frame Grabbed checkpoint
 
                 try {
-                    convert(frame, interleaved, true);   //convert frame to interleavedU8
+                    convert(frame, interleaved, false);   //convert frame to interleavedU8
                 }catch (Exception e)
                 {
                     Log.e("EXCEPTION","Convert exception" ,e);
@@ -186,11 +196,56 @@ public class MainActivity extends Activity {
                 time2 = System.nanoTime();  //Frame conversion to BoofCV checkpoint
 
                 if(i==0){   //Initializer code
-                   tracker.initialize(gray, location);
+
+
+                   //tracker.initialize(gray, location);
+
+                    //****************************************
+
+                    Rectangle2D_F64 rect = new Rectangle2D_F64();
+                    UtilPolygons2D_F64.bounding(location, rect);
+
+                    int width = (int)(rect.p1.x - rect.p0.x);
+                    int height = (int)(rect.p1.y - rect.p0.y);
+
+                    circ_tracker.initialize(gray,(int)rect.p0.x,(int)rect.p0.y,width,height);
+
                 }
                 else{
-                    visible = tracker.process(gray, location);
+
+                    //****************************************START OF CODE IN UI************************************
+                    tracker.process(gray,location);
+                    //********************************************************************************
+
+                    circ_tracker.performTracking(gray);
+
+                    //*******************************************************************************
+
+
+                        RectangleLength2D_F32 r = circ_tracker.getTargetLocation();
+
+                        if( r.x0 >= gray.width || r.y0 >= gray.height )
+                            visible = false;
+                        else if( r.x0+r.width < 0 || r.y0+r.height < 0 )
+                            visible = false;
+                        else {
+                            float x0 = r.x0;
+                            float y0 = r.y0;
+                            float x1 = r.x0 + r.width;
+                            float y1 = r.y0 + r.height;
+
+                            location.a.x = x0;
+                            location.a.y = y0;
+                            location.b.x = x1;
+                            location.b.y = y0;
+                            location.c.x = x1;
+                            location.c.y = y1;
+                            location.d.x = x0;
+                            location.d.y = y1;
+                            visible = true;
+                        }
                 }
+
                 //System.out.println("No problem here3!!!");
                 time3 = System.nanoTime();   //Processing done checkpoint
 
