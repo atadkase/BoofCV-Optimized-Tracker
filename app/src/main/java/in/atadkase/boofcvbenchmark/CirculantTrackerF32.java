@@ -30,6 +30,9 @@ import boofcv.struct.image.ImageGray;
 import boofcv.struct.image.InterleavedF32;
 import georegression.struct.shapes.RectangleLength2D_F32;
 
+
+import in.atadkase.boofcvbenchmark.multithreaded;
+
 import java.util.Random;
 
 /**
@@ -66,6 +69,9 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 
 	// --- Tuning parameters
 	// spatial bandwidth (proportional to target)
+
+
+	public multithreaded<T> multi;
 	private float output_sigma_factor;
 
 	// gaussian kernel bandwidth
@@ -155,6 +161,9 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 								 int workRegionSize ,
 								 float maxPixelValue,
 								 InterpolatePixelS<T> interp ) {
+
+		multi = new multithreaded();
+
 		if( workRegionSize < 3 )
 			throw new IllegalArgumentException("Minimum size of work region is 3 pixels.");
 
@@ -185,6 +194,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	 */
 	public void initialize( T image , int x0 , int y0 , int regionWidth , int regionHeight ) {
 
+		multi.execute();
 		if( image.width < regionWidth || image.height < regionHeight)
 			throw new IllegalArgumentException("Track region is larger than input image: "+regionWidth+" "+regionHeight);
 
@@ -309,6 +319,9 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	 * Find the target inside the current image by searching around its last known location
 	 */
 	public void updateTrackLocation(T image) {
+
+
+
 		get_subwindow(image, templateNew);
 
 		// calculate response of the classifier at all locations
@@ -559,6 +572,9 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 
 		interp.setImage(image);
 		int index = 0;
+
+
+
 		for( int y = 0; y < workRegionSize; y++ ) {
 			float yy = regionTrack.y0 + y*stepY;
 

@@ -59,7 +59,7 @@ public class FileIO {
     public void history_writer(List<Quadrilateral_F32> history, String timeStamp) {
         BufferedWriter out = null;
         try {
-            FileWriter fstream = new FileWriter("/storage/emulated/0/imag/history." + timeStamp + ".txt", true);   // append to file
+            FileWriter fstream = new FileWriter("/storage/emulated/0/history." + timeStamp + ".txt", true);   // append to file
             out = new BufferedWriter(fstream);
             for (Quadrilateral_F32 history_loc : history) {
                 out.write("a:" + history_loc.a.x + " " + history_loc.a.y + "\n" +
@@ -83,7 +83,7 @@ public class FileIO {
         DecimalFormat numberFormat = new DecimalFormat("#.000000");
         BufferedWriter out = null;
         try {
-            FileWriter fstream = new FileWriter("/storage/emulated/0/imag/summary.txt", true);   // append to file
+            FileWriter fstream = new FileWriter("/storage/emulated/0/summary.txt", true);   // append to file
             out = new BufferedWriter(fstream);
             String summaryString = timeStamp + " Video: " + numberFormat.format(fpsVideo)
                     + " RGB_GRAY: " + numberFormat.format(fpsRGB) + " Tracker: "

@@ -55,28 +55,25 @@ import boofcv.factory.tracker.FactoryTrackerObjectQuad;
 
 
 public class MainActivity extends Activity {
-    String SrcPath = "/storage/emulated/0/imag/wildcat_robot.mp4";
-    static {
-        System.loadLibrary("native-lib");
-        System.loadLibrary("nativeOCL");
-        System.loadLibrary("NE10_test_demo");
-    }
-    public native String NE10RunTest();
-    public native String stringFromJNI();
-    private native void initOpenCL(String openCLProgramText);
-    private native void shutdownOpenCL();
-    private Allocation mInAllocation;
-    private Allocation mOutAllocation;
-    private RenderScript mRS;
-    private ScriptC_test tscript;
+    String SrcPath = "/storage/emulated/0/wildcat_robot.mp4";
 
-    int[] a_array = {0,1,2,3,4,5,6,7,8,9};
-    int[] b_array = {9,8,7,6,5,4,3,2,1,0};
-    int[] c_array = new int[10];
+//    static {
+////        System.loadLibrary("native-lib");
+////        System.loadLibrary("nativeOCL");
+////        System.loadLibrary("NE10_test_demo");
+//    }
+//    public native String NE10RunTest();
+//    public native String stringFromJNI();
+//    private native void initOpenCL(String openCLProgramText);
+//    private native void shutdownOpenCL();
+//    private Allocation mInAllocation;
+//    private Allocation mOutAllocation;
+//    private RenderScript mRS;
+//    private ScriptC_test tscript;
 
-
-
-
+//    int[] a_array = {0,1,2,3,4,5,6,7,8,9};
+//    int[] b_array = {9,8,7,6,5,4,3,2,1,0};
+//    int[] c_array = new int[10];
 
 
     @Override
@@ -86,12 +83,38 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         FIO.verifyStoragePermissions(this);
-        TextView tv = (TextView) findViewById(R.id.sample_text);
-        //tv.setText(stringFromJNI());
 
         Frame_Converter fc = new Frame_Converter();
 
-        tv.setText(NE10RunTest());
+
+
+        System.out.println("This is the main thread");
+        System.out.println(android.os.Process.myTid());
+
+//        multithreaded multi = new multithreaded();
+//        Thread a = new Thread(multi.new speedup_code1());
+//        Thread b = new Thread(multi.new speedup_code1());
+//        Thread c = new Thread(multi.new speedup_code1());
+//        Thread d = new Thread(multi.new speedup_code1());
+//        Thread et = new Thread(multi.new speedup_code1());
+//        Thread f = new Thread(multi.new speedup_code1());
+//        Thread g = new Thread(multi.new speedup_code1());
+//
+//        a.start();
+//        b.start();
+//        c.start();
+//        d.start();
+//        et.start();
+//        f.start();
+//        g.start();
+//        System.out.println("Alternate ID");
+//        System.out.println(a.getId());
+//        System.out.println(b.getId());
+//        System.out.println(c.getId());
+//        System.out.println(d.getId());
+//        System.out.println(et.getId());
+//        System.out.println(f.getId());
+//        System.out.println(g.getId());
 
 
 
@@ -114,7 +137,7 @@ public class MainActivity extends Activity {
             GrayU8 gray = new GrayU8(1, 1);
             InterleavedU8 interleaved = new InterleavedU8(imageWidth, imageHeight, numBands);
             Quadrilateral_F32 location = new Quadrilateral_F32(211.0f, 162.0f, 326.0f, 153.0f, 335.0f, 258.0f, 215.0f, 249.0f);
-            TrackerObjectQuadFloat<GrayU8> tracker = FactoryTrackerObjectQuad.circulantFloat(null, GrayU8.class);
+
             List<Quadrilateral_F32> history = new ArrayList<>();
 
             CirculantTrackerF32<GrayU8> circTracker = CircTrackerObjectAlgs.circulantFloat(null, GrayU8.class);
@@ -156,25 +179,23 @@ public class MainActivity extends Activity {
                 time2 = System.nanoTime();  //Frame conversion to BoofCV checkpoint
 
                 if (i == 0) {   //Initializer code
+
                     Rectangle2D_F32 rect = new Rectangle2D_F32();
                     UtilPolygons2D_F32.bounding(location, rect);
-                    int width = (int)(rect.p1.x-rect.p0.x);
-                    int height = (int)(rect.p1.y - rect.p0.y);
-                    circTracker.initialize(gray,(int)rect.p0.x, (int)rect.p0.y, width, height);
-                    //tracker.initialize(gray, location);
+                    int width = (int) (rect.p1.x - rect.p0.x);
+                    int height = (int) (rect.p1.y - rect.p0.y);
+                    circTracker.initialize(gray, (int) rect.p0.x, (int) rect.p0.y, width, height);
+
                 } else {
-                    //visible = tracker.process(gray, location);
-                    // Expanding Tracker.process here
+
                     circTracker.performTracking(gray);
                     RectangleLength2D_F32 r = circTracker.getTargetLocation();
 
-                    if( r.x0 >= gray.width || r.y0 >= gray.height ) {
-                        visible= false;
-                    }
-                    else if( r.x0+r.width < 0 || r.y0+r.height < 0 ) {
+                    if (r.x0 >= gray.width || r.y0 >= gray.height) {
                         visible = false;
-                    }
-                    else {
+                    } else if (r.x0 + r.width < 0 || r.y0 + r.height < 0) {
+                        visible = false;
+                    } else {
                         float x0 = r.x0;
                         float y0 = r.y0;
                         float x1 = r.x0 + r.width;
@@ -218,7 +239,7 @@ public class MainActivity extends Activity {
             System.out.printf("Summary: video %6.1f RGB_GRAY %6.1f Tracker %6.1f  Faults %d\n",
                     fps_Video, fps_RGB_GRAY, fps_Tracker, totalFaults);
 
-            FIO.summary_writer(fps_Video,fps_RGB_GRAY,fps_Tracker,totalFaults,timeStamp);
+            FIO.summary_writer(fps_Video, fps_RGB_GRAY, fps_Tracker, totalFaults, timeStamp);
 
             //**************************************************************************
             //Save history to a file!!!
@@ -232,69 +253,68 @@ public class MainActivity extends Activity {
             Log.e("1", "Grabber Exception");
         }
 
-        initOpenCL(getOpenCLProgram());
-        Log.i("OpenCL", "OpenCL Working! Congrats!");
-        shutdownOpenCL();
-        Log.i("AndroidBasic", "Exiting backgroundThread");
-
+//        initOpenCL(getOpenCLProgram());
+//        Log.i("OpenCL", "OpenCL Working! Congrats!");
+//        shutdownOpenCL();
+//        Log.i("AndroidBasic", "Exiting backgroundThread");
 
 
     }
-
-
-
-    private String getOpenCLProgram() {
-        /* OpenCL program text is stored in a separate file in
-         * assets directory. Here you need to load it as a single
-         * string.
-         *
-         * In fact, the program may be directly built into
-         * native source code where OpenCL API is used,
-         * it is useful for short kernels (few lines) because it doesn't
-         * involve loading code and you don't need to pass it from Java to
-         * native side.
-         */
-
-        try {
-            StringBuilder buffer = new StringBuilder();
-            InputStream stream = getAssets().open("VectorAdd.cl");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-            String s;
-
-            while ((s = reader.readLine()) != null) {
-                buffer.append(s);
-                buffer.append("\n");
-            }
-
-            reader.close();
-            return buffer.toString();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return "";
-
-    }
-
-    public void createScript()
-    {
-        mRS = RenderScript.create(this);
-
-        Type takla = createX(mRS, I32(mRS), 1);
-        mInAllocation = Allocation.createSized(mRS,I32(mRS),10);
-        mOutAllocation = Allocation.createSized(mRS,I32(mRS),10);
-        mInAllocation.copy1DRangeFrom(0,10,a_array);
-        mOutAllocation.copy1DRangeFrom(0,10,b_array);
-        tscript = new ScriptC_test(mRS);
-
-        tscript.forEach_root(mInAllocation,mOutAllocation);
-        mOutAllocation.copy1DRangeTo(0,10,c_array);
-
-        System.out.println("Taklu Haiwan Jindabaad");
-        for(int i=0;i<10; i++)
-            System.out.println(c_array[i]);
-    }
-
-
-
-
 }
+
+
+//    private String getOpenCLProgram() {
+//        /* OpenCL program text is stored in a separate file in
+//         * assets directory. Here you need to load it as a single
+//         * string.
+//         *
+//         * In fact, the program may be directly built into
+//         * native source code where OpenCL API is used,
+//         * it is useful for short kernels (few lines) because it doesn't
+//         * involve loading code and you don't need to pass it from Java to
+//         * native side.
+//         */
+//
+//        try {
+//            StringBuilder buffer = new StringBuilder();
+//            InputStream stream = getAssets().open("VectorAdd.cl");
+//            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+//            String s;
+//
+//            while ((s = reader.readLine()) != null) {
+//                buffer.append(s);
+//                buffer.append("\n");
+//            }
+//
+//            reader.close();
+//            return buffer.toString();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        return "";
+//
+//    }
+//
+//    public void createScript()
+//    {
+//        mRS = RenderScript.create(this);
+//
+//        Type takla = createX(mRS, I32(mRS), 1);
+//        mInAllocation = Allocation.createSized(mRS,I32(mRS),10);
+//        mOutAllocation = Allocation.createSized(mRS,I32(mRS),10);
+//        mInAllocation.copy1DRangeFrom(0,10,a_array);
+//        mOutAllocation.copy1DRangeFrom(0,10,b_array);
+//        tscript = new ScriptC_test(mRS);
+//
+//        tscript.forEach_root(mInAllocation,mOutAllocation);
+//        mOutAllocation.copy1DRangeTo(0,10,c_array);
+//
+//        System.out.println("Taklu Haiwan Jindabaad");
+//        for(int i=0;i<10; i++)
+//            System.out.println(c_array[i]);
+//    }
+//
+//
+//
+//
+//}
