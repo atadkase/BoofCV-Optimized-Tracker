@@ -6,12 +6,16 @@ import android.app.Activity;
 
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.renderscript.Allocation;
+import android.renderscript.RenderScript;
+import android.renderscript.Type;
 import android.util.Log;
 import android.support.v4.app.ActivityCompat;
 import android.widget.TextView;
 
 import static android.content.ContentValues.TAG;
-
+import static android.renderscript.Element.I32;
+import static android.renderscript.Type.createX;
 
 
 //Java imports
@@ -61,8 +65,14 @@ public class MainActivity extends Activity {
     public native String stringFromJNI();
     private native void initOpenCL(String openCLProgramText);
     private native void shutdownOpenCL();
+    private Allocation mInAllocation;
+    private Allocation mOutAllocation;
+    private RenderScript mRS;
+    private ScriptC_test tscript;
 
-
+    int[] a_array = {0,1,2,3,4,5,6,7,8,9};
+    int[] b_array = {9,8,7,6,5,4,3,2,1,0};
+    int[] c_array = new int[10];
 
 
 
@@ -265,6 +275,24 @@ public class MainActivity extends Activity {
 
     }
 
+    public void createScript()
+    {
+        mRS = RenderScript.create(this);
+
+        Type takla = createX(mRS, I32(mRS), 1);
+        mInAllocation = Allocation.createSized(mRS,I32(mRS),10);
+        mOutAllocation = Allocation.createSized(mRS,I32(mRS),10);
+        mInAllocation.copy1DRangeFrom(0,10,a_array);
+        mOutAllocation.copy1DRangeFrom(0,10,b_array);
+        tscript = new ScriptC_test(mRS);
+
+        tscript.forEach_root(mInAllocation,mOutAllocation);
+        mOutAllocation.copy1DRangeTo(0,10,c_array);
+
+        System.out.println("Taklu Haiwan Jindabaad");
+        for(int i=0;i<10; i++)
+            System.out.println(c_array[i]);
+    }
 
 
 
