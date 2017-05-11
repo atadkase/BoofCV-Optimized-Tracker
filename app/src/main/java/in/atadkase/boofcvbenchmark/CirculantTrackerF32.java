@@ -84,60 +84,60 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 
 	//----- Internal variables
 	// computes the FFT
-	private DiscreteFourierTransform<GrayF32,InterleavedF32> fft = DiscreteFourierTransformOps.createTransformF32();
+	public DiscreteFourierTransform<GrayF32,InterleavedF32> fft = DiscreteFourierTransformOps.createTransformF32();
 
 	// storage for subimage of input image
-	protected GrayF32 templateNew = new GrayF32(1,1);
+	public GrayF32 templateNew = new GrayF32(1,1);
 	// storage for the subimage of the previous frame
-	protected GrayF32 template = new GrayF32(1,1);
+	public GrayF32 template = new GrayF32(1,1);
 
 	// cosine window used to reduce artifacts from FFT
-	protected GrayF32 cosine = new GrayF32(1,1);
+	public GrayF32 cosine = new GrayF32(1,1);
 
 	// Storage for the kernel's response
-	private GrayF32 k = new GrayF32(1,1);
-	private InterleavedF32 kf = new InterleavedF32(1,1,2);
+	public GrayF32 k = new GrayF32(1,1);
+	public InterleavedF32 kf = new InterleavedF32(1,1,2);
 
 	// Learn values.  used to compute weight in linear classifier
-	private InterleavedF32 alphaf = new InterleavedF32(1,1,2);
-	private InterleavedF32 newAlphaf = new InterleavedF32(1,1,2);
+	public InterleavedF32 alphaf = new InterleavedF32(1,1,2);
+	public InterleavedF32 newAlphaf = new InterleavedF32(1,1,2);
 
 	// location of target
-	protected RectangleLength2D_F32 regionTrack = new RectangleLength2D_F32();
-	protected RectangleLength2D_F32 regionOut = new RectangleLength2D_F32();
+	public RectangleLength2D_F32 regionTrack = new RectangleLength2D_F32();
+	public RectangleLength2D_F32 regionOut = new RectangleLength2D_F32();
 
 	// Used for computing the gaussian kernel
-	protected GrayF32 gaussianWeight = new GrayF32(1,1);
-	protected InterleavedF32 gaussianWeightDFT = new InterleavedF32(1,1,2);
+	public GrayF32 gaussianWeight = new GrayF32(1,1);
+	public InterleavedF32 gaussianWeightDFT = new InterleavedF32(1,1,2);
 
 	// detector response
-	private GrayF32 response = new GrayF32(1,1);
+	public GrayF32 response = new GrayF32(1,1);
 
 	// storage for storing temporary results
-	private GrayF32 tmpReal0 = new GrayF32(1,1);
-	private GrayF32 tmpReal1 = new GrayF32(1,1);
+	public GrayF32 tmpReal0 = new GrayF32(1,1);
+	public GrayF32 tmpReal1 = new GrayF32(1,1);
 
-	private InterleavedF32 tmpFourier0 = new InterleavedF32(1,1,2);
-	private InterleavedF32 tmpFourier1 = new InterleavedF32(1,1,2);
-	private InterleavedF32 tmpFourier2 = new InterleavedF32(1,1,2);
+	public InterleavedF32 tmpFourier0 = new InterleavedF32(1,1,2);
+	public InterleavedF32 tmpFourier1 = new InterleavedF32(1,1,2);
+	public InterleavedF32 tmpFourier2 = new InterleavedF32(1,1,2);
 
 	// interpolation used when sampling input image into work space
-	private InterpolatePixelS<T> interp;
+	public InterpolatePixelS<T> interp;
 
 	// used to compute sub-pixel location
-	private SearchLocalPeak<GrayF32> localPeak =
+	public SearchLocalPeak<GrayF32> localPeak =
 			FactorySearchLocalPeak.meanShiftUniform(5, 1e-4f, GrayF32.class);
 
 	// adjustment from sub-pixel
-	protected float offX,offY;
+	public float offX,offY;
 
 	// size of the work space in pixels
-	private int workRegionSize;
+	public int workRegionSize;
 	// conversion from workspace to image pixels
-	private float stepX,stepY;
+	public float stepX,stepY;
 
 	// used to fill the area outside of the image with unstructured data.
-	private Random rand = new Random(234);
+	public Random rand = new Random(234);
 
 	/**
 	 * Configure tracker
@@ -215,7 +215,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	/**
 	 * Learn the target's appearance.
 	 */
-	protected void initialLearning( T image ) {
+	public void initialLearning( T image ) {
 		// get subwindow at current estimated target position, to train classifier
 		get_subwindow(image, template);
 
@@ -231,7 +231,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	/**
 	 * Computes the cosine window
 	 */
-	protected static void computeCosineWindow( GrayF32 cosine ) {
+	public static void computeCosineWindow( GrayF32 cosine ) {
 		float cosX[] = new float[ cosine.width ];
 		for( int x = 0; x < cosine.width; x++ ) {
 			cosX[x] = 0.5f*(1 - (float) Math.cos( 2.0f*(float) Math.PI*x/(cosine.width-1) ));
@@ -252,7 +252,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	 * to one the more likely it is the true target.  It should be a peak in the image center.  If it is not then
 	 * it will learn an incorrect model.
 	 */
-	protected void computeGaussianWeights( int width ) {
+	public void computeGaussianWeights( int width ) {
 		// desired output (gaussian shaped), bandwidth proportional to target size
 		float output_sigma = (float) Math.sqrt(width*width) * output_sigma_factor;
 
@@ -276,7 +276,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	}
 
 
-	protected void resizeImages( int workRegionSize ) {
+	public void resizeImages( int workRegionSize ) {
 		templateNew.reshape(workRegionSize, workRegionSize);
 		template.reshape(workRegionSize, workRegionSize);
 		cosine.reshape(workRegionSize,workRegionSize);
@@ -308,7 +308,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	/**
 	 * Find the target inside the current image by searching around its last known location
 	 */
-	protected void updateTrackLocation(T image) {
+	public void updateTrackLocation(T image) {
 		get_subwindow(image, templateNew);
 
 		// calculate response of the classifier at all locations
@@ -353,7 +353,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	/**
 	 * Refine the local-peak using a search algorithm for sub-pixel accuracy.
 	 */
-	protected void subpixelPeak(int peakX, int peakY) {
+	public void subpixelPeak(int peakX, int peakY) {
 		// this function for r was determined empirically by using work regions of 32,64,128
 		int r = Math.min(2,response.width/25);
 		if( r < 0 )
@@ -366,7 +366,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 		offY = localPeak.getPeakY() - peakY;
 	}
 
-	private void updateRegionOut() {
+	public void updateRegionOut() {
 		regionOut.x0 = (regionTrack.x0+((int)regionTrack.width)/2)-((int)regionOut.width)/2;
 		regionOut.y0 = (regionTrack.y0+((int)regionTrack.height)/2)-((int)regionOut.height)/2;
 	}
@@ -501,7 +501,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	/**
 	 * new_alphaf = yf ./ (fft2(k) + lambda);   %(Eq. 7)
 	 */
-	protected static void computeAlphas( InterleavedF32 yf , InterleavedF32 kf , float lambda ,
+	public static void computeAlphas( InterleavedF32 yf , InterleavedF32 kf , float lambda ,
 										 InterleavedF32 alphaf ) {
 
 		for( int y = 0; y < kf.height; y++ ) {
@@ -531,7 +531,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	 * @param xx ||x||^2
 	 * @param yy ||y||^2
 	 */
-	protected static void gaussianKernel(float xx , float yy , GrayF32 xy , float sigma  , GrayF32 output ) {
+	public static void gaussianKernel(float xx , float yy , GrayF32 xy , float sigma  , GrayF32 output ) {
 		float sigma2 = sigma*sigma;
 		float N = xy.width*xy.height;
 
@@ -553,7 +553,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	/**
 	 * Copies the target into the output image and applies the cosine window to it.
 	 */
-	protected void get_subwindow( T image , GrayF32 output ) {
+	public void get_subwindow( T image , GrayF32 output ) {
 
 		// copy the target region
 

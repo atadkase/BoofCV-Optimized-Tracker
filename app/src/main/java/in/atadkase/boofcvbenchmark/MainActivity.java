@@ -34,10 +34,13 @@ import org.bytedeco.javacv.FrameGrabber;
 //BoofCV imports
 import boofcv.abst.tracker.TrackerObjectQuadFloat;
 
+import boofcv.alg.tracker.circulant.CirculantTrackerFloat;
 import boofcv.core.image.ConvertImage;
 
+import boofcv.factory.tracker.FactoryTrackerObjectAlgs;
 import boofcv.struct.image.InterleavedU8;
 import boofcv.struct.image.GrayU8;
+import georegression.geometry.UtilPolygons2D_F32;
 import georegression.struct.shapes.Rectangle2D_F32;
 import georegression.struct.shapes.RectangleLength2D_F32;
 import georegression.struct.shapes.Quadrilateral_F32;
@@ -102,8 +105,9 @@ public class MainActivity extends Activity {
             InterleavedU8 interleaved = new InterleavedU8(imageWidth, imageHeight, numBands);
             Quadrilateral_F32 location = new Quadrilateral_F32(211.0f, 162.0f, 326.0f, 153.0f, 335.0f, 258.0f, 215.0f, 249.0f);
             TrackerObjectQuadFloat<GrayU8> tracker = FactoryTrackerObjectQuad.circulantFloat(null, GrayU8.class);
-            DecimalFormat numberFormat = new DecimalFormat("#.000000");
             List<Quadrilateral_F32> history = new ArrayList<>();
+
+            CirculantTrackerF32<GrayU8> circTracker = CircTrackerObjectAlgs.circulantFloat(null, GrayU8.class);
 
             long totalVideo = 0;
             long totalRGB_GRAY = 0;
@@ -142,9 +146,16 @@ public class MainActivity extends Activity {
                 time2 = System.nanoTime();  //Frame conversion to BoofCV checkpoint
 
                 if (i == 0) {   //Initializer code
-                    tracker.initialize(gray, location);
+                    Rectangle2D_F32 rect = new Rectangle2D_F32();
+                    UtilPolygons2D_F32.bounding(location, rect);
+                    int width = (int)(rect.p1.x-rect.p0.x);
+                    int height = (int)(rect.p1.y - rect.p0.y);
+                    circTracker.initialize(gray,(int)rect.p0.x, (int)rect.p0.y, width, height);
+                    //tracker.initialize(gray, location);
                 } else {
-                    visible = tracker.process(gray, location);
+                    //visible = tracker.process(gray, location);
+                    // Expanding Tracker.process here
+                    circTracker.get_subwindow(gray, circTracker.templateNew);
                 }
 
                 time3 = System.nanoTime();   //Processing done checkpoint
