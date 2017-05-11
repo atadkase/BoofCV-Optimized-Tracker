@@ -155,7 +155,31 @@ public class MainActivity extends Activity {
                 } else {
                     //visible = tracker.process(gray, location);
                     // Expanding Tracker.process here
-                    circTracker.get_subwindow(gray, circTracker.templateNew);
+                    circTracker.performTracking(gray);
+                    RectangleLength2D_F32 r = circTracker.getTargetLocation();
+
+                    if( r.x0 >= gray.width || r.y0 >= gray.height ) {
+                        visible= false;
+                    }
+                    else if( r.x0+r.width < 0 || r.y0+r.height < 0 ) {
+                        visible = false;
+                    }
+                    else {
+                        float x0 = r.x0;
+                        float y0 = r.y0;
+                        float x1 = r.x0 + r.width;
+                        float y1 = r.y0 + r.height;
+
+                        location.a.x = x0;
+                        location.a.y = y0;
+                        location.b.x = x1;
+                        location.b.y = y0;
+                        location.c.x = x1;
+                        location.c.y = y1;
+                        location.d.x = x0;
+                        location.d.y = y1;
+                        visible = true;
+                    }
                 }
 
                 time3 = System.nanoTime();   //Processing done checkpoint
