@@ -93,7 +93,7 @@ public class MainActivity extends Activity {
 
         tv.setText(NE10RunTest());
 
-
+        createScript();
 
         FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(SrcPath);
         try {
@@ -277,6 +277,7 @@ public class MainActivity extends Activity {
 
     public void createScript()
     {
+        System.out.println("RenderScript Started !@%^&*#@%#^@&!(%#^@#%&^@%!*&%*@!#%^!#(");
         mRS = RenderScript.create(this);
 
         Type takla = createX(mRS, I32(mRS), 1);

@@ -550,6 +550,18 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 		}
 	}
 
+	public static void gaussianrenderKernel(float xx, float yy, GrayF32 xy, float sigma, GrayF32 output)
+    {
+        float sigma2 = sigma*sigma;
+        float N = xy.width*xy.height;
+        for(int y=0; y<xy.height; y++)
+        {
+            int index = xy.startIndex + y*xy.stride;
+
+
+        }
+    }
+
 	/**
 	 * Copies the target into the output image and applies the cosine window to it.
 	 */
