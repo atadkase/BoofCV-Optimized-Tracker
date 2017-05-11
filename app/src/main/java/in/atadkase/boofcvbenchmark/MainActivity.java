@@ -55,13 +55,13 @@ import boofcv.factory.tracker.FactoryTrackerObjectQuad;
 
 
 public class MainActivity extends Activity {
-    String SrcPath = "/storage/emulated/0/imag/wildcat_robot.mp4";
+    String SrcPath = "/storage/emulated/0/wildcat_robot.mp4";
     static {
-        System.loadLibrary("native-lib");
-        System.loadLibrary("nativeOCL");
-        System.loadLibrary("NE10_test_demo");
+        //System.loadLibrary("native-lib");
+        //System.loadLibrary("nativeOCL");
+        //System.loadLibrary("NE10_test_demo");
     }
-    public native String NE10RunTest();
+   // public native String NE10RunTest();
     public native String stringFromJNI();
     private native void initOpenCL(String openCLProgramText);
     private native void shutdownOpenCL();
@@ -70,9 +70,9 @@ public class MainActivity extends Activity {
     private RenderScript mRS;
     private ScriptC_test tscript;
 
-    int[] a_array = {0,1,2,3,4,5,6,7,8,9};
-    int[] b_array = {9,8,7,6,5,4,3,2,1,0};
-    int[] c_array = new int[10];
+    int[] a_array;
+    int[] b_array;
+
 
 
 
@@ -91,153 +91,176 @@ public class MainActivity extends Activity {
 
         Frame_Converter fc = new Frame_Converter();
 
-        tv.setText(NE10RunTest());
+        //tv.setText(NE10RunTest());
 
+        a_array = new int[1000];
+        b_array = new int[1000];
 
-
-        FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(SrcPath);
-        try {
-            grabber.start();
-            long time_vid = grabber.getLengthInTime();
-            Log.d("[TIME_VID]", "Time is " + time_vid);
-            Frame frame = new Frame();
-
-            int imageWidth = grabber.getImageWidth();
-            int imageHeight = grabber.getImageHeight();
-
-            FrameGrabber.ImageMode imageFormat = grabber.getImageMode();
-            int numBands = 1;
-            if (imageFormat == FrameGrabber.ImageMode.COLOR) {
-                numBands = 3;
-            }
-
-            GrayU8 gray = new GrayU8(1, 1);
-            InterleavedU8 interleaved = new InterleavedU8(imageWidth, imageHeight, numBands);
-            Quadrilateral_F32 location = new Quadrilateral_F32(211.0f, 162.0f, 326.0f, 153.0f, 335.0f, 258.0f, 215.0f, 249.0f);
-            TrackerObjectQuadFloat<GrayU8> tracker = FactoryTrackerObjectQuad.circulantFloat(null, GrayU8.class);
-            List<Quadrilateral_F32> history = new ArrayList<>();
-
-            CirculantTrackerF32<GrayU8> circTracker = CircTrackerObjectAlgs.circulantFloat(null, GrayU8.class);
-
-            long totalVideo = 0;
-            long totalRGB_GRAY = 0;
-            long totalTracker = 0;
-            int totalFaults = 0;
-            int totalFrames = 0;
-            boolean visible = false;
-            long counter = 0;
-            long time0, time1, time2, time3;
-
-
-            gray.reshape(imageWidth, imageHeight);
-
-            for (long i = 0; i < grabber.getLengthInFrames(); i++) {
-                counter++;
-                time0 = System.nanoTime();  //Start the first timer
-
-                try {
-                    frame = grabber.grabImage();
-                    if (frame == null)
-                        break;
-                } catch (Exception e) {
-                    Log.e("EXCEPTION", "Grab image exception");
-                }
-
-                time1 = System.nanoTime();   //Frame Grabbed checkpoint
-
-                try {
-                    fc.convert(frame, interleaved, true);   //convert frame to interleavedU8
-                } catch (Exception e) {
-                    Log.e("EXCEPTION", "Convert exception", e);
-                }
-
-                ConvertImage.average(interleaved, gray);  //Convert interleaved to gray
-
-                time2 = System.nanoTime();  //Frame conversion to BoofCV checkpoint
-
-                if (i == 0) {   //Initializer code
-                    Rectangle2D_F32 rect = new Rectangle2D_F32();
-                    UtilPolygons2D_F32.bounding(location, rect);
-                    int width = (int)(rect.p1.x-rect.p0.x);
-                    int height = (int)(rect.p1.y - rect.p0.y);
-                    circTracker.initialize(gray,(int)rect.p0.x, (int)rect.p0.y, width, height);
-                    //tracker.initialize(gray, location);
-                } else {
-                    //visible = tracker.process(gray, location);
-                    // Expanding Tracker.process here
-                    circTracker.performTracking(gray);
-                    RectangleLength2D_F32 r = circTracker.getTargetLocation();
-
-                    if( r.x0 >= gray.width || r.y0 >= gray.height ) {
-                        visible= false;
-                    }
-                    else if( r.x0+r.width < 0 || r.y0+r.height < 0 ) {
-                        visible = false;
-                    }
-                    else {
-                        float x0 = r.x0;
-                        float y0 = r.y0;
-                        float x1 = r.x0 + r.width;
-                        float y1 = r.y0 + r.height;
-
-                        location.a.x = x0;
-                        location.a.y = y0;
-                        location.b.x = x1;
-                        location.b.y = y0;
-                        location.c.x = x1;
-                        location.c.y = y1;
-                        location.d.x = x0;
-                        location.d.y = y1;
-                        visible = true;
-                    }
-                }
-
-                time3 = System.nanoTime();   //Processing done checkpoint
-
-                history.add(location.copy());
-                totalVideo += time1 - time0;
-                totalRGB_GRAY += time2 - time1;
-                totalTracker += time3 - time2;
-
-                totalFrames++;
-                if (!visible)
-                    totalFaults++;
-
-            }
-            grabber.stop();
-
-            //**************************************************************************
-            //Done with processing, now write the summary file!.
-
-            System.out.println("Finished the processing!!!!!******************************************************************************************************************");
-
-            double fps_Video = totalFrames / (totalVideo * 1e-9);
-            double fps_RGB_GRAY = totalFrames / (totalRGB_GRAY * 1e-9);
-            double fps_Tracker = totalFrames / (totalTracker * 1e-9);
-            String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date());
-            System.out.printf("Summary: video %6.1f RGB_GRAY %6.1f Tracker %6.1f  Faults %d\n",
-                    fps_Video, fps_RGB_GRAY, fps_Tracker, totalFaults);
-
-            FIO.summary_writer(fps_Video,fps_RGB_GRAY,fps_Tracker,totalFaults,timeStamp);
-
-            //**************************************************************************
-            //Save history to a file!!!
-
-            FIO.history_writer(history, timeStamp);
-
-
-            Log.d("[FRAMES]", "Frames = " + counter);
-
-        } catch (Exception exception) {
-            Log.e("1", "Grabber Exception");
+        for(int i=0;i<1000;i++){
+            a_array[i] = i;
+            b_array[i] = 1000-i;
         }
 
-        initOpenCL(getOpenCLProgram());
-        Log.i("OpenCL", "OpenCL Working! Congrats!");
-        shutdownOpenCL();
-        Log.i("AndroidBasic", "Exiting backgroundThread");
 
 
+        double timea = System.nanoTime();
+        for(int i=0;i<1000;i++){
+
+            b_array[i]+=1000-i;
+        }
+
+        double timeb = System.nanoTime();
+        double usual_time = (timeb-timea)*1e-6;
+        System.out.printf("Single threaded time is: %f",usual_time);
+
+//        FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(SrcPath);
+//        try {
+//            grabber.start();
+//            long time_vid = grabber.getLengthInTime();
+//            Log.d("[TIME_VID]", "Time is " + time_vid);
+//            Frame frame = new Frame();
+//
+//            int imageWidth = grabber.getImageWidth();
+//            int imageHeight = grabber.getImageHeight();
+//
+//            FrameGrabber.ImageMode imageFormat = grabber.getImageMode();
+//            int numBands = 1;
+//            if (imageFormat == FrameGrabber.ImageMode.COLOR) {
+//                numBands = 3;
+//            }
+//
+//            GrayU8 gray = new GrayU8(1, 1);
+//            InterleavedU8 interleaved = new InterleavedU8(imageWidth, imageHeight, numBands);
+//            Quadrilateral_F32 location = new Quadrilateral_F32(211.0f, 162.0f, 326.0f, 153.0f, 335.0f, 258.0f, 215.0f, 249.0f);
+//            TrackerObjectQuadFloat<GrayU8> tracker = FactoryTrackerObjectQuad.circulantFloat(null, GrayU8.class);
+//            List<Quadrilateral_F32> history = new ArrayList<>();
+//
+//            CirculantTrackerF32<GrayU8> circTracker = CircTrackerObjectAlgs.circulantFloat(null, GrayU8.class);
+//
+//            long totalVideo = 0;
+//            long totalRGB_GRAY = 0;
+//            long totalTracker = 0;
+//            int totalFaults = 0;
+//            int totalFrames = 0;
+//            boolean visible = false;
+//            long counter = 0;
+//            long time0, time1, time2, time3;
+//
+//
+//            gray.reshape(imageWidth, imageHeight);
+//
+//            for (long i = 0; i < grabber.getLengthInFrames(); i++) {
+//                counter++;
+//                time0 = System.nanoTime();  //Start the first timer
+//
+//                try {
+//                    frame = grabber.grabImage();
+//                    if (frame == null)
+//                        break;
+//                } catch (Exception e) {
+//                    Log.e("EXCEPTION", "Grab image exception");
+//                }
+//
+//                time1 = System.nanoTime();   //Frame Grabbed checkpoint
+//
+//                try {
+//                    fc.convert(frame, interleaved, true);   //convert frame to interleavedU8
+//                } catch (Exception e) {
+//                    Log.e("EXCEPTION", "Convert exception", e);
+//                }
+//
+//                ConvertImage.average(interleaved, gray);  //Convert interleaved to gray
+//
+//                time2 = System.nanoTime();  //Frame conversion to BoofCV checkpoint
+//
+//                if (i == 0) {   //Initializer code
+//                    Rectangle2D_F32 rect = new Rectangle2D_F32();
+//                    UtilPolygons2D_F32.bounding(location, rect);
+//                    int width = (int)(rect.p1.x-rect.p0.x);
+//                    int height = (int)(rect.p1.y - rect.p0.y);
+//                    circTracker.initialize(gray,(int)rect.p0.x, (int)rect.p0.y, width, height);
+//                    //tracker.initialize(gray, location);
+//                } else {
+//                    //visible = tracker.process(gray, location);
+//                    // Expanding Tracker.process here
+//                    circTracker.performTracking(gray);
+//                    RectangleLength2D_F32 r = circTracker.getTargetLocation();
+//
+//                    if( r.x0 >= gray.width || r.y0 >= gray.height ) {
+//                        visible= false;
+//                    }
+//                    else if( r.x0+r.width < 0 || r.y0+r.height < 0 ) {
+//                        visible = false;
+//                    }
+//                    else {
+//                        float x0 = r.x0;
+//                        float y0 = r.y0;
+//                        float x1 = r.x0 + r.width;
+//                        float y1 = r.y0 + r.height;
+//
+//                        location.a.x = x0;
+//                        location.a.y = y0;
+//                        location.b.x = x1;
+//                        location.b.y = y0;
+//                        location.c.x = x1;
+//                        location.c.y = y1;
+//                        location.d.x = x0;
+//                        location.d.y = y1;
+//                        visible = true;
+//                    }
+//                }
+//
+//                time3 = System.nanoTime();   //Processing done checkpoint
+//
+//                history.add(location.copy());
+//                totalVideo += time1 - time0;
+//                totalRGB_GRAY += time2 - time1;
+//                totalTracker += time3 - time2;
+//
+//                totalFrames++;
+//                if (!visible)
+//                    totalFaults++;
+//
+//            }
+//            grabber.stop();
+//
+//            //**************************************************************************
+//            //Done with processing, now write the summary file!.
+//
+//            System.out.println("Finished the processing!!!!!******************************************************************************************************************");
+//
+//            double fps_Video = totalFrames / (totalVideo * 1e-9);
+//            double fps_RGB_GRAY = totalFrames / (totalRGB_GRAY * 1e-9);
+//            double fps_Tracker = totalFrames / (totalTracker * 1e-9);
+//            String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date());
+//            System.out.printf("Summary: video %6.1f RGB_GRAY %6.1f Tracker %6.1f  Faults %d\n",
+//                    fps_Video, fps_RGB_GRAY, fps_Tracker, totalFaults);
+//
+//            FIO.summary_writer(fps_Video,fps_RGB_GRAY,fps_Tracker,totalFaults,timeStamp);
+//
+//            //**************************************************************************
+//            //Save history to a file!!!
+//
+//            FIO.history_writer(history, timeStamp);
+//
+//
+//            Log.d("[FRAMES]", "Frames = " + counter);
+//
+//        } catch (Exception exception) {
+//            Log.e("1", "Grabber Exception");
+//        }
+
+//        initOpenCL(getOpenCLProgram());
+//        Log.i("OpenCL", "OpenCL Working! Congrats!");
+//        shutdownOpenCL();
+//        Log.i("AndroidBasic", "Exiting backgroundThread");
+
+        timea = System.nanoTime();
+        createScript();
+        timeb = System.nanoTime();
+        double renderscript_time = (timeb-timea)*1e-6;
+        System.out.printf("Renderscript time is: %f",renderscript_time);
+        System.out.printf("Speedup is: %f",(usual_time/renderscript_time));
 
     }
 
@@ -279,19 +302,19 @@ public class MainActivity extends Activity {
     {
         mRS = RenderScript.create(this);
 
-        Type takla = createX(mRS, I32(mRS), 1);
-        mInAllocation = Allocation.createSized(mRS,I32(mRS),10);
-        mOutAllocation = Allocation.createSized(mRS,I32(mRS),10);
-        mInAllocation.copy1DRangeFrom(0,10,a_array);
-        mOutAllocation.copy1DRangeFrom(0,10,b_array);
+        //Type takla = createX(mRS, I32(mRS), 1);
+        mInAllocation = Allocation.createSized(mRS,I32(mRS),1000);
+        mOutAllocation = Allocation.createSized(mRS,I32(mRS),1000);
+        mInAllocation.copy1DRangeFrom(0,1000,a_array);
+        mOutAllocation.copy1DRangeFrom(0,1000,b_array);
         tscript = new ScriptC_test(mRS);
 
         tscript.forEach_root(mInAllocation,mOutAllocation);
-        mOutAllocation.copy1DRangeTo(0,10,c_array);
+        mOutAllocation.copy1DRangeTo(0,1000,b_array);
 
-        System.out.println("Taklu Haiwan Jindabaad");
-        for(int i=0;i<10; i++)
-            System.out.println(c_array[i]);
+        //System.out.println("Taklu Haiwan Jindabaad");
+
+
     }
 
 
