@@ -71,7 +71,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	// spatial bandwidth (proportional to target)
 
 
-	public multithreaded<T> multi;
+	public multithreaded<T> multi = new multithreaded(this);
 	private float output_sigma_factor;
 
 	// gaussian kernel bandwidth
@@ -83,7 +83,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	private float interp_factor;
 
 	// the maximum pixel value
-	private float maxPixelValue;
+	public float maxPixelValue;
 
 	// extra padding around the selected region
 	private float padding;
@@ -162,7 +162,6 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 								 float maxPixelValue,
 								 InterpolatePixelS<T> interp ) {
 
-		multi = new multithreaded();
 
 		if( workRegionSize < 3 )
 			throw new IllegalArgumentException("Minimum size of work region is 3 pixels.");
@@ -194,7 +193,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	 */
 	public void initialize( T image , int x0 , int y0 , int regionWidth , int regionHeight ) {
 
-		multi.execute();
+
 		if( image.width < regionWidth || image.height < regionHeight)
 			throw new IllegalArgumentException("Track region is larger than input image: "+regionWidth+" "+regionHeight);
 
@@ -227,7 +226,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	 */
 	public void initialLearning( T image ) {
 		// get subwindow at current estimated target position, to train classifier
-		get_subwindow(image, template);
+		multi.get_subwindow_multi(image, template);
 
 		// Kernel Regularized Least-Squares, calculate alphas (in Fourier domain)
 		//	k = dense_gauss_kernel(sigma, x);
@@ -322,7 +321,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 
 
 
-		get_subwindow(image, templateNew);
+		multi.get_subwindow_multi(image, templateNew);
 
 		// calculate response of the classifier at all locations
 		// matlab: k = dense_gauss_kernel(sigma, x, z);
@@ -389,7 +388,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	 */
 	public void performLearning(T image) {
 		// use the update track location
-		get_subwindow(image, templateNew);
+		multi.get_subwindow_multi(image, templateNew);
 
 		// Kernel Regularized Least-Squares, calculate alphas (in Fourier domain)
 		//	k = dense_gauss_kernel(sigma, x);
