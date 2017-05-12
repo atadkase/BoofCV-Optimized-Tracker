@@ -89,10 +89,10 @@ public class MainActivity extends Activity {
         TextView tv = (TextView) findViewById(R.id.sample_text);
         //tv.setText(stringFromJNI());
 
-        long timeJ = System.nanoTime();
-        stringFromJNI();
-        long timeN = System.nanoTime();
-        System.out.println("Time required is: "+(timeN-timeJ)*1e-6);
+        //long timeJ = System.nanoTime();
+        //stringFromJNI();
+        //long timeN = System.nanoTime();
+        //System.out.println("Time required is: "+(timeN-timeJ)*1e-6);
         Frame_Converter fc = new Frame_Converter();
 
         tv.setText(NE10RunTest());
@@ -236,7 +236,7 @@ public class MainActivity extends Activity {
             Log.d("[FRAMES]", "Frames = " + counter);
 
         } catch (Exception exception) {
-            Log.e("1", "Grabber Exception");
+            Log.e("1", "Grabber Exception"+exception);
         }
 
         initOpenCL(getOpenCLProgram());
