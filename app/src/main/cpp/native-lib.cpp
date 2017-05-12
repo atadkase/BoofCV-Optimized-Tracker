@@ -62,20 +62,11 @@ Java_in_atadkase_boofcvbenchmark_MainActivity_NE10RunTest(JNIEnv *env,
 
 extern "C"
 JNIEXPORT float JNICALL
-Java_in_atadkase_boofcvbenchmark_CirculantTrackerF32_IDP(JNIEnv *env,jobject callingObject, jobject Gray)
+Java_in_atadkase_boofcvbenchmark_CirculantTrackerF32_IDP(JNIEnv *env,jobject callingObject, jfloatArray Gray, jint height, jint width)
 {
     float sum = 0;
-    jclass cls = env->GetObjectClass(Gray);
-    jfieldID grayDataId = env->GetFieldID(cls, "data", "[F");
-    jobject objArray = env->GetObjectField (Gray, grayDataId);
-    jfieldID grayHeight = env->GetFieldID(cls, "height", "I");
-    jfieldID grayWidth = env->GetFieldID(cls, "width", "I");
-    int height = env->GetIntField(Gray,grayHeight);
-    int width=env->GetIntField(Gray,grayWidth);
     int N = height*width;
-    jfloatArray* fArray = reinterpret_cast<jfloatArray*>(&objArray);
-    jsize len = env->GetArrayLength(*fArray);
-    float* data = env->GetFloatArrayElements(*fArray, 0);
+    float* data = env->GetFloatArrayElements(Gray, 0);
 #pragma omp parallel for reduction(+ : sum)
     for(int i=0; i<N; ++i)
     {
@@ -162,9 +153,69 @@ float imgDP(float* x, int N)
 //    }
 //
 //}
+void circshift(float* a, float* b , int aheight, int awidth, int bheight, int astart, int bstart, int astride, int bstride);
+void gaussianKernel(float xx , float yy , float* xy , int xywidth, int xyheight, int xystride,
+                    int xystart, float sigma  , float* output );
 
 //
-//extern "C"
-//JNIEXPORT jfloatArray JNICALL
-//Java_in_atadkase_boofcvbenchmark_CirculantTrackerF32_LearningFused(JNIEnv *env,jobject callingObject, jfloat sigma,
-//                                                         jfloatArray xptr, jfloatArray yptr, jint xwidth, jint xheight, jint ywidth, jint yheight, jint workRegionSize)
+extern "C"
+JNIEXPORT jfloatArray JNICALL
+Java_in_atadkase_boofcvbenchmark_CirculantTrackerF32_LearningFused(JNIEnv *env,jobject callingObject, jfloatArray xyptr, jint xyheight, jint xywidth, jint tmpreal1width,
+                                                         jfloat xx, jfloat yy, jfloat sigma, jint workRegionSize,jint xystartindex, jint tempstartindex, jint xystride, jint tempstride)
+{
+
+    float sum = 0;
+    float* data = env->GetFloatArrayElements(xyptr, 0);
+    int N = (int)xyheight*(int)xywidth;
+    float* temp = (float*)malloc(sizeof(float)*N);
+    float out[N];
+    jfloatArray result=env->NewFloatArray(N);
+    circshift(data, temp, (int)xyheight, (int)xywidth, (int)tmpreal1width, (int)xystartindex,
+              (int)tempstartindex, (int)xystride, (int)tempstride);
+    gaussianKernel((float)xx, (float)yy, temp, (int)xywidth, (int)xyheight, (int)tempstride,
+                   (int)tempstartindex, (float)sigma, out);
+    (*env).SetFloatArrayRegion(result, 0, N, out);
+    free(temp);
+    return result;
+
+}
+
+ void circshift(float* a, float* b , int aheight, int awidth, int bheight, int astart, int bstart, int astride, int bstride) {
+
+
+    int w2 = awidth/2;
+    int h2 = bheight/2;
+#pragma omp parallel for
+    for( int y = 0; y < aheight; y++ ) {
+        int yy = (y+h2)%aheight;
+        #pragma omp parallel for
+        for( int x = 0; x < awidth; x++ ) {
+            int xx = (x+w2)%awidth;
+
+            b[bstart+xx +bstride*yy] = a[astart+x+astride*y];
+        }
+    }
+
+}
+
+
+void gaussianKernel(float xx , float yy , float* xy , int xywidth, int xyheight, int xystride,
+                    int xystart, float sigma  , float* output ) {
+    float sigma2 = sigma*sigma;
+    float N = xywidth*xyheight;
+#pragma omp parallel for
+    for( int y = 0; y < xyheight; y++ ) {
+        int index = xystart + y*xystride;
+    #pragma omp parallel for
+        for( int x = 0; x < xywidth; x++) {
+
+            // (xx + yy - 2 * xy) / numel(x)
+            float value = (xx + yy - 2*xy[index])/N;
+
+            float v =(float) exp(- fmaxf(0, value) / sigma2);
+
+            output[index] = v;
+            index++;
+        }
+    }
+}

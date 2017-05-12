@@ -89,10 +89,10 @@ public class MainActivity extends Activity {
         TextView tv = (TextView) findViewById(R.id.sample_text);
         //tv.setText(stringFromJNI());
 
-        //long timeJ = System.nanoTime();
-        //stringFromJNI();
-        //long timeN = System.nanoTime();
-        //System.out.println("Time required is: "+(timeN-timeJ)*1e-6);
+        long timeJ = System.nanoTime();
+        stringFromJNI();
+        long timeN = System.nanoTime();
+        System.out.println("Time required is: "+(timeN-timeJ)*1e-6);
         Frame_Converter fc = new Frame_Converter();
 
         tv.setText(NE10RunTest());
@@ -118,7 +118,7 @@ public class MainActivity extends Activity {
             GrayU8 gray = new GrayU8(1, 1);
             InterleavedU8 interleaved = new InterleavedU8(imageWidth, imageHeight, numBands);
             Quadrilateral_F32 location = new Quadrilateral_F32(211.0f, 162.0f, 326.0f, 153.0f, 335.0f, 258.0f, 215.0f, 249.0f);
-            TrackerObjectQuadFloat<GrayU8> tracker = FactoryTrackerObjectQuad.circulantFloat(null, GrayU8.class);
+            //TrackerObjectQuadFloat<GrayU8> tracker = FactoryTrackerObjectQuad.circulantFloat(null, GrayU8.class);
             List<Quadrilateral_F32> history = new ArrayList<>();
 
 
@@ -139,7 +139,6 @@ public class MainActivity extends Activity {
             gray.reshape(imageWidth, imageHeight);
 
             for (long i = 0; i < grabber.getLengthInFrames(); i++) {
-                counter++;
                 time0 = System.nanoTime();  //Start the first timer
 
                 try {
@@ -234,15 +233,19 @@ public class MainActivity extends Activity {
 
 
             Log.d("[FRAMES]", "Frames = " + counter);
+            initOpenCL(getOpenCLProgram());
+            Log.i("OpenCL", "OpenCL Working! Congrats!");
+
+
+            circTracker.runFFT();
+                    shutdownOpenCL();
+            Log.i("AndroidBasic", "Exiting backgroundThread");
 
         } catch (Exception exception) {
             Log.e("1", "Grabber Exception"+exception);
         }
 
-        initOpenCL(getOpenCLProgram());
-        Log.i("OpenCL", "OpenCL Working! Congrats!");
-        shutdownOpenCL();
-        Log.i("AndroidBasic", "Exiting backgroundThread");
+
 
 
 
@@ -264,7 +267,7 @@ public class MainActivity extends Activity {
 
         try {
             StringBuilder buffer = new StringBuilder();
-            InputStream stream = getAssets().open("VectorAdd.cl");
+            InputStream stream = getAssets().open("FFT2D.cl");
             BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
             String s;
 

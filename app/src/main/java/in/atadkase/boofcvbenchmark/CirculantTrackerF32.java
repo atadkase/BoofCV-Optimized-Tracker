@@ -157,8 +157,8 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	// used to fill the area outside of the image with unstructured data.
 	public Random rand = new Random(234);
 
-	static public native float IDP(GrayF32 RGB);
-	static public native float[] DGK(float sigma, float[] x, float[] y, int width, int height, int workRegionSize);
+	static public native float IDP(float[] Gray, int height, int width);
+	//static public native float[] DGK(float sigma, float[] x, float[] y, int width, int height, int workRegionSize);
 	/**
 	 * Configure tracker
 	 *
@@ -424,6 +424,11 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 		}
 	}
 
+
+	//public void alpha_calc()
+
+
+
 	/**
 	 * Gaussian Kernel with dense sampling.
 	 *  Evaluates a gaussian kernel with bandwidth SIGMA for all displacements
@@ -437,12 +442,12 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	 * @param k Output containing Gaussian kernel for each element in target region
 	 */
 
-	public void call_DGK_Native(float sigma , GrayF32 x , GrayF32 y , GrayF32 k)
-	{
-		k.data = DGK(sigma, x.data,y.data, x.height, x.width, workRegionSize);
-	}
-
-	public static native void InitDGK();
+//	public void call_DGK_Native(float sigma , GrayF32 x , GrayF32 y , GrayF32 k)
+//	{
+//		k.data = DGK(sigma, x.data,y.data, x.height, x.width, workRegionSize);
+//	}
+//
+//	public static native void InitDGK();
 
 
 
@@ -455,7 +460,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 		// find x in Fourier domain
 		fft.forward(x, xf);
 		float xx = imageDotProduct(x);
-		//float xx = IDP(x);
+		//float xx = IDP(x.data,x.height,x.width);
 
 		if( x != y ) {
 			// general case, x and y are different
@@ -472,22 +477,54 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 		// cross-correlation term in Fourier domain
 		elementMultConjB(xf,yf,xyf);
 		// convert to spatial domain
+		//double t0 = System.nanoTime();
 		fft.inverse(xyf,xy);
+
+//		float[] result = new float[xy.width*xy.height];
+//
+//		k.data = LearningFused(xy.data,xy.height, xy.width,tmpReal1.width,xx,yy,sigma,workRegionSize,
+//				xy.startIndex, tmpReal1.startIndex, xy.stride, tmpReal1.stride);
 		circshift(xy,tmpReal1);
 
+		//System.out.println("XYF HEIGHT ="+xyf.height);
 		// calculate gaussian response for all positions
 		gaussianKernel(xx, yy, tmpReal1, sigma, k);
+
+//		for(int i=0; i< xy.width*xy.height; i++)
+//		{
+//			if(k.data[i] != result[i])
+//			{
+//				System.out.println("Expected "+ k.data[i]+" Got "+result[i]);
+//			}
+//		}
+		//double t1 = System.nanoTime();
+		//System.out.println("CircShift ="+(t1-t0)*1e-6);
 	}
 
+	public native float[] LearningFused(float[] xyptr, int xyheight, int xywidth, int tmpRealwidth,
+				 float xx, float yy, float sigma,  int workRegionSize, int a, int b, int c, int d);
+
+
+
+
+
+
+
+
+
+
 	public static void circshift(GrayF32 a, GrayF32 b ) {
-		int w2 = a.width/2;
+
+		int aheight = a.height;
+		int awidth = a.width;
+		int w2 = awidth/2;
 		int h2 = b.height/2;
 
-		for( int y = 0; y < a.height; y++ ) {
-			int yy = (y+h2)%a.height;
+		for( int y = 0; y < aheight; y++ ) {
+			int yy = (y+h2)%aheight;
 
-			for( int x = 0; x < a.width; x++ ) {
-				int xx = (x+w2)%a.width;
+			for( int x = 0; x < awidth; x++ ) {
+				int xx = (x+w2)%awidth;
 
 				b.set( xx , yy , a.get(x,y));
 			}
@@ -515,11 +552,15 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	 * Element-wise multiplication of 'a' and the complex conjugate of 'b'
 	 */
 	public static void elementMultConjB( InterleavedF32 a , InterleavedF32 b , InterleavedF32 output ) {
-		for( int y = 0; y < a.height; y++ ) {
+		int aheight = a.height;
+		int astartIndex = a.startIndex;
+		int astride = a.stride;
+		int awidth = a.width;
+		for( int y = 0; y < aheight; y++ ) {
 
-			int index = a.startIndex + y*a.stride;
+			int index = astartIndex + y*astride;
 
-			for( int x = 0; x < a.width; x++, index += 2 ) {
+			for( int x = 0; x < awidth; x++, index += 2 ) {
 
 				float realA = a.data[index];
 				float imgA = a.data[index+1];
@@ -584,17 +625,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 		}
 	}
 
-	public static void gaussianrenderKernel(float xx, float yy, GrayF32 xy, float sigma, GrayF32 output)
-    {
-        float sigma2 = sigma*sigma;
-        float N = xy.width*xy.height;
-        for(int y=0; y<xy.height; y++)
-        {
-            int index = xy.startIndex + y*xy.stride;
 
-
-        }
-    }
 
 	/**
 	 * Copies the target into the output image and applies the cosine window to it.
@@ -662,4 +693,13 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 //		float result = IDPScript.;
 //
 //	}
+	public native void FFTStep(int width,
+							   int p,
+							   float [] inDataPtr,
+							   int direction);
+
+	public void runFFT()
+	{
+		FFTStep(64, 6,k.data,1);
+	}
 }

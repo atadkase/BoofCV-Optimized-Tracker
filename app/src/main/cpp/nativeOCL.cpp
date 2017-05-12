@@ -11,6 +11,8 @@
 #include <vector>
 #include <cassert>
 #include <sys/time.h>
+#include <math.h>
+#include <cl_platform.h>
 #include "../includes/cl.h"
 #include "../includes/cl_platform.h"
 
@@ -503,7 +505,7 @@ void initOpenCL
      * in an OpenCL program.
      */
 
-    openCLObjects.kernel = clCreateKernel(openCLObjects.program, "VectorAdd", &err);
+    openCLObjects.kernel = clCreateKernel(openCLObjects.program, "FFT2DRadix2", &err);
     SAMPLE_CHECK_ERRORS(err);
 
     /* -----------------------------------------------------------------------
@@ -627,3 +629,124 @@ extern "C" void Java_in_atadkase_boofcvbenchmark_MainActivity_shutdownOpenCL
     shutdownOpenCL(openCLObjects);
     LOGD("shutdownOpenCL(openCLObjects) was called");
 }
+
+
+extern "C" void Java_in_atadkase_boofcvbenchmark_CirculantTrackerF32_FFTStep
+        (
+                JNIEnv* env,
+                jobject thisObject,
+                jint width,
+                jint p,
+                jfloatArray inDataPtr,
+                jint direction
+        )
+{
+    //LOGD("shutdownOpenCL(openCLObjects) was called");
+    int err;
+    float * x = env->GetFloatArrayElements(inDataPtr, 0);
+//    cl_float2* inData= (cl_float2 *)x;
+    int N = pow(2,p);
+    cl_float2* inData = (cl_float2*)malloc(N * sizeof(cl_float2));
+
+    for(int i=0; i<N; i++)
+    {
+        inData[i].s[0] = x[i];
+        inData[i].s[1] = 0;
+    }
+
+
+
+    cl_float2* outData = (cl_float2*) malloc (N * sizeof (cl_float2));
+    if(!openCLObjects.isInputBufferInitialized) {
+        if (openCLObjects.isInputBufferInitialized) {
+            /* If this is not the first time, you need to deallocate the previously
+             * allocated buffer as the new buffer will be allocated in
+             * the next statements.
+             *
+             * It is important to remember that unlike Java, there is no
+             * garbage collector for OpenCL objects, so deallocate all resources
+             * explicitly to avoid running out of memory.
+             *
+             * It is especially important in case of image buffers,
+             * because they are relatively large and even one lost buffer
+             * can significantly limit free resources for the application.
+             */
+
+            err = clReleaseMemObject(openCLObjects.inputBuffer);
+            //SAMPLE_CHECK_ERRORS(err);
+        }
+        openCLObjects.inputBuffer = clCreateBuffer(openCLObjects.context,
+                                                   CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
+                                                   sizeof(float) * N * 2, (void *) inData,
+                                                   &err);
+        //SAMPLE_CHECK_ERRORS(err);
+        openCLObjects.isInputBufferInitialized = true;
+    }
+    cl_mem outputBuffer =
+            clCreateBuffer
+                    (
+                            openCLObjects.context,
+                            CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                            sizeof(float) * N* 2,    // Buffer size in bytes, same as the input buffer.
+                            (void*)outData,  // Area, above which the buffer is created.
+                            &err
+                    );
+   // SAMPLE_CHECK_ERRORS(err);
+    cl_int widthNative = width;
+    cl_int pNative = p;
+    cl_int directionNative = direction;
+
+
+    err = clSetKernelArg(openCLObjects.kernel, 0, sizeof(cl_int), &widthNative);
+   // SAMPLE_CHECK_ERRORS(err);
+
+    err = clSetKernelArg(openCLObjects.kernel, 1, sizeof(cl_int), &pNative);
+    //SAMPLE_CHECK_ERRORS(err);
+
+
+    err = clSetKernelArg(openCLObjects.kernel, 2, sizeof(openCLObjects.inputBuffer), &openCLObjects.inputBuffer);
+   // SAMPLE_CHECK_ERRORS(err);
+
+    err = clSetKernelArg(openCLObjects.kernel, 3, sizeof(outputBuffer), &outputBuffer);
+   // SAMPLE_CHECK_ERRORS(err);
+
+    size_t globalSize[2] = { 4, 64 };
+
+
+    timeval start;
+    timeval end;
+
+    gettimeofday(&start, NULL);
+
+    err =
+            clEnqueueNDRangeKernel
+                    (
+                            openCLObjects.queue,
+                            openCLObjects.kernel,
+                            2,
+                            0,
+                            globalSize,
+                            0,
+                            0, 0, 0
+                    );
+    SAMPLE_CHECK_ERRORS(err);
+
+    err = clFinish(openCLObjects.queue);
+    gettimeofday(&end, NULL);
+    SAMPLE_CHECK_ERRORS(err);
+
+
+
+    /* The start and end timestamps are obtained, now calculate
+     * the elapsed time interval in seconds and print it out in
+     * LogCat.
+     */
+
+    float ndrangeDuration =
+            (end.tv_sec + end.tv_usec * 1e-6) - (start.tv_sec + start.tv_usec * 1e-6);
+
+    LOGD("NDRangeKernel time: %f", ndrangeDuration);
+
+}
+
+
