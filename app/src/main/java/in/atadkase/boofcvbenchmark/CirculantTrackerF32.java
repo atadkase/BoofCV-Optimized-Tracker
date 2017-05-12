@@ -18,6 +18,10 @@
 
 package in.atadkase.boofcvbenchmark;
 
+import android.renderscript.Allocation;
+import android.renderscript.RenderScript;
+import android.renderscript.Type;
+
 import boofcv.abst.feature.detect.peak.SearchLocalPeak;
 import boofcv.abst.transform.fft.DiscreteFourierTransform;
 import boofcv.alg.interpolate.InterpolatePixelS;
@@ -29,8 +33,12 @@ import boofcv.struct.image.GrayF32;
 import boofcv.struct.image.ImageGray;
 import boofcv.struct.image.InterleavedF32;
 import georegression.struct.shapes.RectangleLength2D_F32;
+import pl.edu.icm.jlargearrays.ConcurrencyUtils;
 
 import java.util.Random;
+
+import static android.renderscript.Element.I32;
+import static android.renderscript.Type.createX;
 
 /**
  * <p>
@@ -64,6 +72,16 @@ import java.util.Random;
  */
 public class CirculantTrackerF32<T extends ImageGray<T>> {
 
+	static {
+		System.loadLibrary("native-lib");
+	}
+
+
+	static private Allocation mInAllocation;
+	static private Allocation mOutAllocation;
+	static private RenderScript mRS;
+	//static private ScriptC_test IDPScript;
+
 	// --- Tuning parameters
 	// spatial bandwidth (proportional to target)
 	private float output_sigma_factor;
@@ -84,7 +102,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 
 	//----- Internal variables
 	// computes the FFT
-	public DiscreteFourierTransform<GrayF32,InterleavedF32> fft = DiscreteFourierTransformOps.createTransformF32();
+	public DiscreteFourierTransform<GrayF32,InterleavedF32> fft = DFTOpsMultithreaded.createTransformFloat();
 
 	// storage for subimage of input image
 	public GrayF32 templateNew = new GrayF32(1,1);
@@ -139,6 +157,8 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	// used to fill the area outside of the image with unstructured data.
 	public Random rand = new Random(234);
 
+	static public native float IDP(GrayF32 RGB);
+	static public native float[] DGK(float sigma, float[] x, float[] y, int width, int height, int workRegionSize);
 	/**
 	 * Configure tracker
 	 *
@@ -167,7 +187,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 
 		this.padding = padding;
 		this.workRegionSize = workRegionSize;
-
+		ConcurrencyUtils.setNumberOfThreads(8);
 		resizeImages(workRegionSize);
 		computeCosineWindow(cosine);
 		computeGaussianWeights(workRegionSize);
@@ -205,6 +225,8 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 
 		stepX = (w-1)/(float)(workRegionSize-1);
 		stepY = (h-1)/(float)(workRegionSize-1);
+
+		//InitDGK();
 
 		updateRegionOut();
 
@@ -309,6 +331,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	 * Find the target inside the current image by searching around its last known location
 	 */
 	public void updateTrackLocation(T image) {
+
 		get_subwindow(image, templateNew);
 
 		// calculate response of the classifier at all locations
@@ -318,7 +341,7 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 		fft.forward(k,kf);
 
 		// response = real(ifft2(alphaf .* fft2(k)));   %(Eq. 9)
-		DiscreteFourierTransformOps.multiplyComplex(alphaf, kf, tmpFourier0);
+		DFTOpsMultithreaded.multiplyComplex(alphaf, kf, tmpFourier0);
 		fft.inverse(tmpFourier0, response);
 
 		// find the pixel with the largest response
@@ -413,15 +436,36 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	 * @param y Input image
 	 * @param k Output containing Gaussian kernel for each element in target region
 	 */
+
+	public void call_DGK_Native(float sigma , GrayF32 x , GrayF32 y , GrayF32 k)
+	{
+		k.data = DGK(sigma, x.data,y.data, x.height, x.width, workRegionSize);
+	}
+
+	public static native void InitDGK();
+
+
+
+
 	public void dense_gauss_kernel(float sigma , GrayF32 x , GrayF32 y , GrayF32 k ) {
 
 		InterleavedF32 xf=tmpFourier0,yf,xyf=tmpFourier2;
 		GrayF32 xy = tmpReal0;
 		float yy;
-
 		// find x in Fourier domain
 		fft.forward(x, xf);
 		float xx = imageDotProduct(x);
+		//float xx = IDP(x);
+		///System.out.println(ConcurrencyUtils.getNumberOfProcessors());
+//		if(trial!= xx)
+//		{
+//			System.out.println("!@^%!#@^(*!@#^&@!#(*^#@!*^#*@!^#(^Not correct!!!!!");
+//			System.out.println("Got: "+trial+" Expected: "+xx);
+//		}
+//		else
+//		{
+//			System.out.println("++++++++++++++++++++++++++Correct!!!!!");
+//		}
 
 		if( x != y ) {
 			// general case, x and y are different
@@ -613,4 +657,19 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 	public GrayF32 getResponse() {
 		return response;
 	}
+
+//	public void CreateScriptIDP(int max_size, android.content.Context cont){
+//
+//		mRS = RenderScript.create(cont);
+//		mInAllocation = Allocation.createSized(mRS,I32(mRS),max_size);
+//		IDPScript = new ScriptC_test(mRS);
+//
+//
+//	}
+
+//	public float runIDP(GrayF32 image){
+//		mInAllocation.copy1DRangeFrom(0,image.width*image.height,image.data);
+//		float result = IDPScript.;
+//
+//	}
 }

@@ -1,5 +1,6 @@
 #include <jni.h>
 #include <string>
+#include <omp.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,13 +9,16 @@
 #include "test_funcs.h"
 #include "unit_test_common.h"
 
+
+float imgDP(float* x);
+
 extern "C"
-JNIEXPORT jstring JNICALL
+JNIEXPORT void JNICALL
 Java_in_atadkase_boofcvbenchmark_MainActivity_stringFromJNI(
         JNIEnv *env,
         jobject /* this */) {
-    std::string hello = "Hello from C++";
-    return env->NewStringUTF(hello.c_str());
+    //std::string hello = "Hello from C++";
+    return ;//env->NewStringUTF(hello.c_str());
 }
 
 
@@ -54,3 +58,113 @@ Java_in_atadkase_boofcvbenchmark_MainActivity_NE10RunTest(JNIEnv *env,
     }
     return NULL;
 }
+
+
+extern "C"
+JNIEXPORT float JNICALL
+Java_in_atadkase_boofcvbenchmark_CirculantTrackerF32_IDP(JNIEnv *env,jobject callingObject, jobject Gray)
+{
+    float sum = 0;
+    jclass cls = env->GetObjectClass(Gray);
+    jfieldID grayDataId = env->GetFieldID(cls, "data", "[F");
+    jobject objArray = env->GetObjectField (Gray, grayDataId);
+    jfieldID grayHeight = env->GetFieldID(cls, "height", "I");
+    jfieldID grayWidth = env->GetFieldID(cls, "width", "I");
+    int height = env->GetIntField(Gray,grayHeight);
+    int width=env->GetIntField(Gray,grayWidth);
+    int N = height*width;
+    jfloatArray* fArray = reinterpret_cast<jfloatArray*>(&objArray);
+    jsize len = env->GetArrayLength(*fArray);
+    float* data = env->GetFloatArrayElements(*fArray, 0);
+#pragma omp parallel for reduction(+ : sum)
+    for(int i=0; i<N; ++i)
+    {
+        sum += data[i]*data[i];
+    }
+    return sum;
+}
+
+float* xf, *yf, *xy, *xyf, *tempReal1;
+
+int currentWorkRegionSize = -1;
+
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_in_atadkase_boofcvbenchmark_CirculantTrackerF32_InitDGK(int workRegionSize)
+{
+//        xf = new float[workRegionSize][workRegionSize][2];
+//        yf = new float[workRegionSize][workRegionSize][2];
+//        xyf = new float[workRegionSize][workRegionSize][2];
+//        xy = new float[workRegionSize][workRegionSize];
+//        tempReal1 = new float[workRegionSize][workRegionSize];
+//        currentWorkRegionSize = workRegionSize;
+}
+extern "C"
+JNIEXPORT jfloatArray JNICALL
+Java_in_atadkase_boofcvbenchmark_CirculantTrackerF32_DGK(JNIEnv *env,jobject callingObject, jfloat sigma,
+jfloatArray xptr, jfloatArray yptr, jint xwidth, jint xheight, jint ywidth, jint yheight, jint workRegionSize)
+{
+//    float * x = env->GetFloatArrayElements(xptr, 0);
+//    float * y = env->GetFloatArrayElements(yptr,0);
+//    int xnumElements = xwidth*xheight;
+//    int ynumElements = ywidth*yheight;
+//
+//    //fft_fwd(x,xf, xnumElements);
+//    float xx = imgDP(x, xnumElements);
+//
+//    //fft_fwd(y, yf, ynumElements);
+//    float yy = imgDP(y, ynumElements);
+
+
+    // cross-correlation term in Fourier domain
+    //elementMultConjB(xf,yf,xyf);
+    // convert to spatial domain
+    //fft.inverse(xyf,xy);
+    //circshift(xy,tmpReal1);
+
+    // calculate gaussian response for all positions
+    //gaussianKernel(xx, yy, tmpReal1, sigma, k);
+
+
+
+
+
+//    env->ReleaseFloatArrayElements(xptr, x, 0);
+//    env->ReleaseFloatArrayElements(yptr, y, 0);
+}
+
+
+float imgDP(float* x, int N)
+{
+    float sum = 0;
+    #pragma omp parallel for reduction(+ : sum)
+    for(int i=0; i<N; ++i)
+    {
+        sum += x[i]*x[i];
+    }
+    return sum;
+}
+
+
+//static void circshift(float* a, float* b, int w2, int h2 ) {
+//    int w2 = a.width/2;
+//    int h2 = b.height/2;
+//
+//    for( int y = 0; y < a.height; y++ ) {
+//        int yy = (y+h2)%a.height;
+//
+//        for( int x = 0; x < a.width; x++ ) {
+//            int xx = (x+w2)%a.width;
+//
+//            b.set( xx , yy , a.get(x,y));
+//        }
+//    }
+//
+//}
+
+//
+//extern "C"
+//JNIEXPORT jfloatArray JNICALL
+//Java_in_atadkase_boofcvbenchmark_CirculantTrackerF32_LearningFused(JNIEnv *env,jobject callingObject, jfloat sigma,
+//                                                         jfloatArray xptr, jfloatArray yptr, jint xwidth, jint xheight, jint ywidth, jint yheight, jint workRegionSize)

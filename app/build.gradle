@@ -13,8 +13,9 @@ android {
         multiDexEnabled true
         externalNativeBuild {
             cmake {
-                cppFlags "-frtti -fexceptions"
+                cppFlags "-frtti -fexceptions -std=c++11 -fopenmp"
                 abiFilters 'armeabi', 'armeabi-v7a'
+                arguments "-DANDROID_TOOLCHAIN=gcc"
             }
         }
         sourceSets {
@@ -74,6 +75,7 @@ dependencies {
     //testCompile group: 'junit', name: 'junit', version: '4.12'
     compile files('libs/opencv-android-arm.jar')
     compile files('libs/ffmpeg-android-arm.jar')
+    compile files('libs/JTransforms-3.1-with-dependencies.jar')
 }
 
 

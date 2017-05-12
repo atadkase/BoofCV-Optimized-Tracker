@@ -62,17 +62,17 @@ public class MainActivity extends Activity {
         System.loadLibrary("NE10_test_demo");
     }
     public native String NE10RunTest();
-    public native String stringFromJNI();
+    public native void stringFromJNI();
     private native void initOpenCL(String openCLProgramText);
     private native void shutdownOpenCL();
-    private Allocation mInAllocation;
-    private Allocation mOutAllocation;
-    private RenderScript mRS;
-    private ScriptC_test tscript;
-
-    int[] a_array = {0,1,2,3,4,5,6,7,8,9};
-    int[] b_array = {9,8,7,6,5,4,3,2,1,0};
-    int[] c_array = new int[10];
+//    private Allocation mInAllocation;
+//    private Allocation mOutAllocation;
+//    private RenderScript mRS;
+//    private ScriptC_test tscript;
+//
+//    int[] a_array = {0,1,2,3,4,5,6,7,8,9};
+//    int[] b_array = {9,8,7,6,5,4,3,2,1,0};
+//    int[] c_array = new int[10];
 
 
 
@@ -89,11 +89,15 @@ public class MainActivity extends Activity {
         TextView tv = (TextView) findViewById(R.id.sample_text);
         //tv.setText(stringFromJNI());
 
+        long timeJ = System.nanoTime();
+        stringFromJNI();
+        long timeN = System.nanoTime();
+        System.out.println("Time required is: "+(timeN-timeJ)*1e-6);
         Frame_Converter fc = new Frame_Converter();
 
         tv.setText(NE10RunTest());
 
-        createScript();
+        //createScript();
 
         FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(SrcPath);
         try {
@@ -117,7 +121,10 @@ public class MainActivity extends Activity {
             TrackerObjectQuadFloat<GrayU8> tracker = FactoryTrackerObjectQuad.circulantFloat(null, GrayU8.class);
             List<Quadrilateral_F32> history = new ArrayList<>();
 
+
             CirculantTrackerF32<GrayU8> circTracker = CircTrackerObjectAlgs.circulantFloat(null, GrayU8.class);
+
+            //circTracker.CreateScriptIDP(imageHeight*imageWidth,this);
 
             long totalVideo = 0;
             long totalRGB_GRAY = 0;
@@ -275,25 +282,25 @@ public class MainActivity extends Activity {
 
     }
 
-    public void createScript()
-    {
-        System.out.println("RenderScript Started !@%^&*#@%#^@&!(%#^@#%&^@%!*&%*@!#%^!#(");
-        mRS = RenderScript.create(this);
-
-        Type takla = createX(mRS, I32(mRS), 1);
-        mInAllocation = Allocation.createSized(mRS,I32(mRS),10);
-        mOutAllocation = Allocation.createSized(mRS,I32(mRS),10);
-        mInAllocation.copy1DRangeFrom(0,10,a_array);
-        mOutAllocation.copy1DRangeFrom(0,10,b_array);
-        tscript = new ScriptC_test(mRS);
-
-        tscript.forEach_root(mInAllocation,mOutAllocation);
-        mOutAllocation.copy1DRangeTo(0,10,c_array);
-
-        System.out.println("Taklu Haiwan Jindabaad");
-        for(int i=0;i<10; i++)
-            System.out.println(c_array[i]);
-    }
+//    public void createScript()
+//    {
+//        System.out.println("RenderScript Started !@%^&*#@%#^@&!(%#^@#%&^@%!*&%*@!#%^!#(");
+//        mRS = RenderScript.create(this);
+//
+//        Type takla = createX(mRS, I32(mRS), 1);
+//        mInAllocation = Allocation.createSized(mRS,I32(mRS),10);
+//        mOutAllocation = Allocation.createSized(mRS,I32(mRS),10);
+//        mInAllocation.copy1DRangeFrom(0,10,a_array);
+//        mOutAllocation.copy1DRangeFrom(0,10,b_array);
+//        tscript = new ScriptC_test(mRS);
+//
+//        tscript.forEach_root(mInAllocation,mOutAllocation);
+//        mOutAllocation.copy1DRangeTo(0,10,c_array);
+//
+//        System.out.println("Taklu Haiwan Jindabaad");
+//        for(int i=0;i<10; i++)
+//            System.out.println(c_array[i]);
+//    }
 
 
 
