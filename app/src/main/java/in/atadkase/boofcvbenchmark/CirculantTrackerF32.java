@@ -456,16 +456,6 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 		fft.forward(x, xf);
 		float xx = imageDotProduct(x);
 		//float xx = IDP(x);
-		///System.out.println(ConcurrencyUtils.getNumberOfProcessors());
-//		if(trial!= xx)
-//		{
-//			System.out.println("!@^%!#@^(*!@#^&@!#(*^#@!*^#*@!^#(^Not correct!!!!!");
-//			System.out.println("Got: "+trial+" Expected: "+xx);
-//		}
-//		else
-//		{
-//			System.out.println("++++++++++++++++++++++++++Correct!!!!!");
-//		}
 
 		if( x != y ) {
 			// general case, x and y are different
