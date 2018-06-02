@@ -62,7 +62,7 @@ public class MainActivity extends Activity {
         System.loadLibrary("NE10_test_demo");
     }
     public native String NE10RunTest();
-    public native void stringFromJNI();
+    public native String stringFromJNI();
     private native void initOpenCL(String openCLProgramText);
     private native void shutdownOpenCL();
 //    private Allocation mInAllocation;

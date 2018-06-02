@@ -458,9 +458,15 @@ public class CirculantTrackerF32<T extends ImageGray<T>> {
 		GrayF32 xy = tmpReal0;
 		float yy;
 		// find x in Fourier domain
+		long time0 = System.nanoTime();
 		fft.forward(x, xf);
+		long time1 = System.nanoTime();
 		float xx = imageDotProduct(x);
-		//float xx = IDP(x.data,x.height,x.width);
+
+		float zz = IDP(x.data,x.height,x.width);
+		long time2 = System.nanoTime();
+
+		System.out.println("Seq: "+(time1-time0)*1e-6 +"OpenMP: "+(time2-time1)*1e-6);
 
 		if( x != y ) {
 			// general case, x and y are different

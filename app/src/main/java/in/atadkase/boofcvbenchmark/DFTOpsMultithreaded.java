@@ -56,9 +56,9 @@ public class DFTOpsMultithreaded {
 
 
     public static DiscreteFourierTransform<GrayF32,InterleavedF32>  createTransformFloat() {
-        setThreadsBeginN_2D(400);
-        setThreadsBeginN_1D_FFT_4Threads(400);
-        setThreadsBeginN_1D_FFT_2Threads(200);
+        setThreadsBeginN_2D(40000);
+        setThreadsBeginN_1D_FFT_4Threads(40000);
+        setThreadsBeginN_1D_FFT_2Threads(20000);
         return new MultiThreadedFFT();
     }
 

@@ -13,12 +13,12 @@
 float imgDP(float* x);
 
 extern "C"
-JNIEXPORT void JNICALL
+JNIEXPORT jstring JNICALL
 Java_in_atadkase_boofcvbenchmark_MainActivity_stringFromJNI(
         JNIEnv *env,
         jobject /* this */) {
-    //std::string hello = "Hello from C++";
-    return ;//env->NewStringUTF(hello.c_str());
+    std::string hello = "Hello from C++";
+    return env->NewStringUTF(hello.c_str());
 }
 
 
